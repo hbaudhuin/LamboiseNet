@@ -87,8 +87,9 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
 
-    train_dataset_ = load_dataset(batch(batch_size, n_images))
-    test_dataset = get_singleExample(DATA_PATH)
+    #train_dataset_ = load_dataset(batch(batch_size, n_images))
+    train_dataset_ = load_dataset(["1180", "1180", "1180"])
+    test_dataset = load_dataset(["1180", "1180"])
 
     logging.info(f'Batch size: {batch_size}')
 

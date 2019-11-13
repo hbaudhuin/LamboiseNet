@@ -2,6 +2,7 @@ import numpy as np
 import tifffile as tif
 from PIL import Image
 import imageio
+import torch
 
 
 image_num = [276, 277, 278, 280,
@@ -57,6 +58,16 @@ def images_prepare(img_before, img_after, img_mask):
     i_join[[0, 1, 2], ...] = np.transpose(i_b[...], axes=(2, 0, 1))
     i_join[[3, 4, 5], ...] = np.transpose(i_a[...], axes=(2, 0, 1))
     return i_join, i_m
+
+
+def dataset_to_dataloader(inputs, masks):
+    tensor_x = torch.stack([torch.Tensor(i) for i in inputs])
+    tensor_y = torch.stack([torch.Tensor(i) for i in masks])
+
+    my_dataset = torch.utils.data.TensorDataset(tensor_x, tensor_y)
+    my_dataloader = torch.utils.data.DataLoader(my_dataset)
+
+    return my_dataloader
 
 
 def normalize(image):
