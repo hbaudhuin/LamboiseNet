@@ -119,7 +119,7 @@ def save_image(arrs, location):
 def rgb_to_grey(mask):
     grey = np.zeros(shape=(mask.shape[0], mask.shape[1]), dtype=np.long)
     grey[...] = mask[..., 0]
-    grey[grey > 0] = 1
+    grey[grey != 0] = 1
     return grey
 
 
@@ -134,6 +134,17 @@ def load_dataset(img_nums):
         inputs[i] = input
         masks[i] = mask
     return dataset_to_dataloader(inputs, masks)
+
+
+def save_mask_predicted(mask_predicted):
+    arrs = np.zeros(shape=(650, 650))
+    arrs[...] = mask_predicted.detach().numpy()[0, 0, ...]
+    print(arrs.shape)
+    arrs *= 255
+    img = Image.fromarray(arrs)
+    img = img.convert("RGB")
+    img.save("mask_predicted.png")
+
 
 
 if __name__ == '__main__':

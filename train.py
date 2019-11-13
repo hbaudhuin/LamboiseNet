@@ -17,6 +17,7 @@ from helpers.batching import batch
 import torchvision
 import os
 
+
 def train_model(model,
                 num_epochs,
                 batch_size,
@@ -51,6 +52,7 @@ def train_model(model,
                 ground_truth.to(device)
 
                 mask_predicted = model(images)
+                #save_mask_predicted(mask_predicted)
 
                 loss = criterion(mask_predicted, ground_truth)
                 epoch_loss += loss.item()
@@ -118,6 +120,6 @@ try:
                 device=device)
 except KeyboardInterrupt:
     torch.save(model.state_dict(), 'Weights/kek.pth')
-    logging.info(f'Interupted by Keyboard')
+    logging.info(f'Interrupted by Keyboard')
 
 # TODO start writing memoire to keep track of source (tqdm https://towardsdatascience.com/progress-bars-in-python-4b44e8a4c482)
