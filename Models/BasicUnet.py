@@ -20,27 +20,32 @@ class BasicUnet(nn.Module):
                                                 DoubleConvolutionLayer(64, 128))
         self.downscaling_layer2 = nn.Sequential(nn.MaxPool2d(2),
                                                 DoubleConvolutionLayer(128, 256))
+        self.bottleneck =nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2, padding=1, output_padding=1)
         # TODO add padding ?
         self.up1 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         self.upscaling_layer1 = DoubleConvolutionLayer(256, 128)
+        self.bottleneck2 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, padding=1,
+                                             output_padding=1)
         self.up2 =nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.upscaling_layer = DoubleConvolutionLayer(128, 64)
+        self.upscaling_layer2 = DoubleConvolutionLayer(128, 64)
         self.output_layer = DoubleConvolutionLayer(64, n_classes)
 
     def forward(self, x):
         out0 = self.input_layer(x)
-        """out1 = self.downscaling_layer1(out0)
+        out1 = self.downscaling_layer1(out0)
         out = self.downscaling_layer2(out1)
-        out = self.up1(out)
-       # m = torch.nn.modules.padding.ConstantPad2d(1 , 50)
-       # out = m(out)
+        bottleneck = self.bottleneck(out)
+        out = self.up1(bottleneck)
+
         out = self.pad(out, out1)
         out = torch.cat([out, out1], dim=1)
         out = self.upscaling_layer1(out)
 
+        out = self.bottleneck2(out)
         out = self.up2(out)
-        out = torch.cat([out, x], dim=1)
-        out0 = self.upscaling_layer2(out)"""
+        out = self.pad(out, out0)
+        out = torch.cat([out, out0], dim=1)
+        out0 = self.upscaling_layer2(out)
         output = self.output_layer(out0)
         return output
 
@@ -49,11 +54,12 @@ class BasicUnet(nn.Module):
 
         diffY = x2.size()[2] - x1.size()[2]
         diffX = x2.size()[3] - x1.size()[3]
-        print('sizes', x1.size(), x2.size(), diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2)
-        x2 = F.pad(x2, [diffX // 2, diffX - diffX // 2,
+       # print('sizes', x1.size(), x2.size(), diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2)
+        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
                         diffY // 2, diffY - diffY // 2])
 
-        return x2
+       # print('sizes', x1.size(), x2.size(), diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2)
+        return x1
 
 
 class DoubleConvolutionLayer(nn.Module):

@@ -79,7 +79,7 @@ def train_model(model,
 
 if __name__ == '__main__':
     # Hyperparameters
-    num_epochs = 5
+    num_epochs = 10
     num_classes = 2
     batch_size = 1
     learning_rate = 0.001
