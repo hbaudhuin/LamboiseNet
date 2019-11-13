@@ -36,7 +36,7 @@ def train_model(model,
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     transform = torchvision.transforms.Normalize(mean=0, std=1)
-
+    last_mask = None
     for epochs in range(num_epochs):
         # state intent of training to the model
         model.train()
@@ -52,7 +52,7 @@ def train_model(model,
                 ground_truth.to(device)
 
                 mask_predicted = model(images)
-                #save_mask_predicted(mask_predicted)
+                last_mask = mask_predicted
 
                 loss = criterion(mask_predicted, ground_truth)
                 epoch_loss += loss.item()
@@ -71,6 +71,7 @@ def train_model(model,
         # TODO what is the evaluation metric
 
         logging.info(f'Loss at  {epochs} : {epoch_loss}')
+    save_mask_predicted(last_mask)
 
         #torch.save(model.state_dict(), 'Weights/h.pth')
 
