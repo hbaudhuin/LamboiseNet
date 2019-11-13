@@ -27,12 +27,12 @@ def main():
     save_image(arrs, "DATA/patch1/patch1_after_norm.png")
     '''
 
-    inputs, masks = load_dataset(["1180", "1180", "1180"])
-    print(inputs.shape)
-    print(masks.shape)
+    dataloader = load_dataset(["1180", "1180", "1180"])
+    print([x for x in dataloader])
+
 
 def open_image(filename):
-    print("opening")
+    #print("opening")
 
     # Loading a tif file
     if filename[-4:].lower() in [".tif", "tiff"]:
@@ -71,7 +71,7 @@ def dataset_to_dataloader(inputs, masks):
 
 
 def normalize(image):
-    print("normalizing")
+    #print("normalizing")
 
     # R G B, with sometimes a 4th Alpha channel on PNG
     arrs = [None, None, None]
@@ -105,20 +105,20 @@ def normalize(image):
 
 
 def save_image(arrs, location):
-    print("merging")
+    #print("merging")
     rgbArray = np.zeros((arrs[0].shape[0], arrs[0].shape[1], 3), 'uint8')
     rgbArray[..., 0] = arrs[0]
     rgbArray[..., 1] = arrs[1]
     rgbArray[..., 2] = arrs[2]
 
-    print("saving")
+    #print("saving")
     img = Image.fromarray(rgbArray)
     img.save(location)
 
 
 def rgb_to_grey(mask):
     grey = np.zeros(shape=(mask.shape[0], mask.shape[1]))
-    grey[...] = np.average(mask[:, ...])
+    grey[...] = mask[..., 0]
     return grey
 
 
@@ -132,7 +132,7 @@ def load_dataset(img_nums):
         input, mask = images_prepare(img_b, img_a, img_m)
         inputs[i] = input
         masks[i] = mask
-    return inputs, masks
+    return dataset_to_dataloader(inputs, masks)
 
 
 if __name__ == '__main__':
