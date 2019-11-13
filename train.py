@@ -15,7 +15,7 @@ import torch.nn as nn
 from eval import evaluation
 from helpers.batching import batch
 import torchvision
-
+import os
 
 def train_model(model,
                 num_epochs,
@@ -70,9 +70,11 @@ def train_model(model,
 
         logging.info(f'Loss at  {epochs} : {epoch_loss}')
 
-        #score = evaluation(model, test_dataset, device)
+        #torch.save(model.state_dict(), 'Weights/h.pth')
 
-       # logging.info(f'Validation score (soft dice method): {score}')
+    #score = evaluation(model, test_dataset, device)
+
+    # logging.info(f'Validation score (soft dice method): {score}')
 
 
 if __name__ == '__main__':
@@ -115,7 +117,7 @@ try:
                 learning_rate=learning_rate,
                 device=device)
 except KeyboardInterrupt:
-    torch.save(model.state_dict(), '/Weights')
+    torch.save(model.state_dict(), 'Weights/kek.pth')
     logging.info(f'Interupted by Keyboard')
 
 # TODO start writing memoire to keep track of source (tqdm https://towardsdatascience.com/progress-bars-in-python-4b44e8a4c482)
