@@ -14,6 +14,7 @@ from torch.nn import *
 import torch.nn as nn
 from eval import evaluation
 from helpers.batching import batch
+import torchvision
 
 
 def train_model(model,
@@ -33,12 +34,14 @@ def train_model(model,
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+    transform = torchvision.transforms.Normalize(mean=0, std=1)
+
     for epochs in range(num_epochs):
         # state intent of training to the model
         model.train()
 
         epoch_loss = 0
-
+        torch.autograd.set_detect_anomaly(True)
         with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
 
             for images, ground_truth  in train_dataset:
@@ -48,9 +51,6 @@ def train_model(model,
                 ground_truth.to(device)
 
                 mask_predicted = model(images)
-                #mask_predicted = torch.round(mask_predicted)
-                print(mask_predicted.shape)
-                print(ground_truth.shape)
 
                 loss = criterion(mask_predicted, ground_truth)
                 epoch_loss += loss.item()
@@ -78,10 +78,11 @@ def train_model(model,
 if __name__ == '__main__':
     # Hyperparameters
     num_epochs = 5
-    num_classes = 1
+    num_classes = 2
     batch_size = 1
     learning_rate = 0.001
     n_images = 1
+    n_channels =6
 
     # setup of log and device
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -102,7 +103,7 @@ if __name__ == '__main__':
 
     # model creation
 
-    model = BasicUnet(n_channels=6, n_classes=1)
+    model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
     logging.info(f'Network creation:\n' )
       #               f'\t6 input channels\n', f'\t2 output channels\n')
     model.to(device)

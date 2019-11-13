@@ -29,30 +29,32 @@ class BasicUnet(nn.Module):
 
     def forward(self, x):
         out0 = self.input_layer(x)
-        """out1 = self.downscaling_layer1(out0)
+        """ out1 = self.downscaling_layer1(out0)
         out = self.downscaling_layer2(out1)
         out = self.up1(out)
-        m = torch.nn.modules.padding.ConstantPad2d(1 , 50)
-        out = m(out)
+       # m = torch.nn.modules.padding.ConstantPad2d(1 , 50)
+       # out = m(out)
+        out = self.pad(out, out1)
         out = torch.cat([out, out1], dim=1)
         out = self.upscaling_layer1(out)
 
         out = self.up2(out)
         out = torch.cat([out, x], dim=1)
-        out = self.upscaling_layer2(out)
-        """
+        out0 = self.upscaling_layer2(out)
+"""
         output = self.output_layer(out0)
         return output
 
 
     def pad(self, x1, x2) :
+
         diffY = x2.size()[2] - x1.size()[2]
         diffX = x2.size()[3] - x1.size()[3]
-
-        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+        print('sizes', x1.size(), x2.size(), diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2)
+        x2 = F.pad(x2, [diffX // 2, diffX - diffX // 2,
                         diffY // 2, diffY - diffY // 2])
 
-        return x1
+        return x2
 
 
 class DoubleConvolutionLayer(nn.Module):
