@@ -62,7 +62,7 @@ def images_prepare(img_before, img_after, img_mask):
 
 def dataset_to_dataloader(inputs, masks):
     tensor_x = torch.stack([torch.Tensor(i) for i in inputs])
-    tensor_y = torch.stack([torch.Tensor(i) for i in masks])
+    tensor_y = torch.stack([torch.tensor(i, dtype=torch.long) for i in masks])
 
     my_dataset = torch.utils.data.TensorDataset(tensor_x, tensor_y)
     my_dataloader = torch.utils.data.DataLoader(my_dataset)
@@ -117,14 +117,15 @@ def save_image(arrs, location):
 
 
 def rgb_to_grey(mask):
-    grey = np.zeros(shape=(mask.shape[0], mask.shape[1]))
+    grey = np.zeros(shape=(mask.shape[0], mask.shape[1]), dtype=np.long)
     grey[...] = mask[..., 0]
+    grey[grey > 0] = 1
     return grey
 
 
 def load_dataset(img_nums):
     inputs = np.zeros(shape=(len(img_nums), 6, 650, 650)) # TODO un-hardcode
-    masks = np.zeros(shape=(len(img_nums), 650, 650))
+    masks = np.zeros(shape=(len(img_nums), 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
         img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
