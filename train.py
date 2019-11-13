@@ -1,7 +1,7 @@
 from sklearn.metrics import precision_recall_fscore_support as prfs
 
 from torch import *
-from Models import basicUnet
+from Models.basicUnet import BasicUnet
 import torch.utils.data
 import torch.optim as optim
 import torch.autograd as autograd
@@ -9,7 +9,9 @@ import torchvision as tv
 from torch.utils.data import *
 from image import *
 import logging
-import tqdm
+from tqdm import tqdm
+from torch.nn import *
+import torch.nn as nn
 from eval import evaluation
 from helpers.batching import batch
 
@@ -39,15 +41,16 @@ def train_model(model,
 
         with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
 
-            for i, data in enumerate(train_dataset):
+            for images, ground_truth  in train_dataset:
                 # TODO check input format
-                images = torch.from_numpy()
-                ground_truth = torch.from_numpy()
 
                 images.to(device)
                 ground_truth.to(device)
 
                 mask_predicted = model(images)
+                #mask_predicted = torch.round(mask_predicted)
+                print(mask_predicted.shape)
+                print(ground_truth.shape)
 
                 loss = criterion(mask_predicted, ground_truth)
                 epoch_loss += loss.item()
@@ -58,6 +61,8 @@ def train_model(model,
                 loss.backward()
                 optimizer.step()
 
+                progress_bar.update(1)
+
                 # TODO update necessary for progress_bar ?
 
         # TODO add eval methods
@@ -65,31 +70,31 @@ def train_model(model,
 
         logging.info(f'Loss at  {epochs} : {epoch_loss}')
 
-        score = evaluation(model, test_dataset, device)
+        #score = evaluation(model, test_dataset, device)
 
-        logging.info(f'Validation score (soft dice method): {score}')
+       # logging.info(f'Validation score (soft dice method): {score}')
 
 
 if __name__ == '__main__':
     # Hyperparameters
     num_epochs = 5
-    num_classes = 10
+    num_classes = 1
     batch_size = 1
     learning_rate = 0.001
     n_images = 1
 
     # setup of log and device
-    logging.basicConfig(level=logging.INFO, format='%(level)s: %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
-    logging.info(f'Using {device}')
+    logging.info(f'  Using  {device}')
 
     # dataset setup
 
     # transform into pytorch vector and normalise
+    #batch_index= batch(batch_size, n_images)
+    train_dataset = load_dataset([1180, 1180])
+    test_dataset = load_dataset([1180])
 
-    #train_dataset_ = load_dataset(batch(batch_size, n_images))
-    train_dataset_ = load_dataset(["1180", "1180", "1180"])
-    test_dataset = load_dataset(["1180", "1180"])
 
     logging.info(f'Batch size: {batch_size}')
 
@@ -97,14 +102,14 @@ if __name__ == '__main__':
 
     # model creation
 
-    model = basicUnet(n_channelse=6, n_classes=1)
-    logging.info(f'Netword creation:\n',
-                 f'\t{model.n_channels} input channels\n' f'\t{model.n_classes} output channels\n')
+    model = BasicUnet(n_channels=6, n_classes=1)
+    logging.info(f'Network creation:\n' )
+      #               f'\t6 input channels\n', f'\t2 output channels\n')
     model.to(device)
 
 try:
     train_model(model=model,
-                epochs=num_epochs,
+                num_epochs=num_epochs,
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device)
