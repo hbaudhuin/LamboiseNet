@@ -36,6 +36,14 @@ def open_image(filename):
         return imageio.imread(filename)
 
 
+def image_to_arrs(image):
+    arrs = [None, None, None]
+    for i in range(3):
+        arr = np.copy(image[..., i])
+        arrs[i] = arr
+    return arrs
+
+
 def normalize(image):
     print("normalizing")
 
