@@ -16,6 +16,7 @@ from eval import evaluation
 from helpers.batching import batch
 import torchvision
 import os
+import time
 
 
 def train_model(model,
@@ -48,8 +49,8 @@ def train_model(model,
             for images, ground_truth  in train_dataset:
                 # TODO check input format
 
-                images.to(device)
-                ground_truth.to(device)
+                images = images.to(device)
+                ground_truth = ground_truth.to(device)
 
                 mask_predicted = model(images)
                 last_mask = mask_predicted
@@ -81,13 +82,15 @@ def train_model(model,
 
 
 if __name__ == '__main__':
+    t_start = time.time()
+
     # Hyperparameters
-    num_epochs = 10
+    num_epochs = 500
     num_classes = 2
-    batch_size = 1
-    learning_rate = 0.001
+    batch_size = 10
+    learning_rate = 0.05
     n_images = 1
-    n_channels =6
+    n_channels = 6
 
     # setup of log and device
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -98,7 +101,7 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     #batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset([1180, 1180])
+    train_dataset = load_dataset([1180])
     test_dataset = load_dataset([1180])
 
 
@@ -122,5 +125,8 @@ try:
 except KeyboardInterrupt:
     torch.save(model.state_dict(), 'Weights/kek.pth')
     logging.info(f'Interrupted by Keyboard')
+finally:
+    t_end = time.time()
+    print("\nDone in " + str(int((t_end - t_start))) + " sec")
 
 # TODO start writing memoire to keep track of source (tqdm https://towardsdatascience.com/progress-bars-in-python-4b44e8a4c482)

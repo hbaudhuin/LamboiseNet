@@ -138,10 +138,25 @@ def load_dataset(img_nums):
 
 def save_mask_predicted(mask_predicted):
     arrs = np.zeros(shape=(650, 650))
-    arrs[...] = mask_predicted.detach().numpy()[0, 0, ...]
-    print(arrs.shape)
-    arrs *= 255
-    img = Image.fromarray(arrs)
+    try:
+        arrs[...] = mask_predicted.detach().numpy()[0, 0, ...]
+    except TypeError :
+        # Fix when we're running on CUDA
+        arrs[...] = mask_predicted.cpu().detach().numpy()[0, 0, ...]
+
+    lo = np.min(arrs)
+    hi = min(np.max(arrs),2)
+    arrs = (arrs - lo) / (hi - lo)
+    arrs = 1 - arrs
+
+    rgbArray = np.ones((650, 650, 3), 'uint8')
+    rgbArray[..., 0] = arrs
+    rgbArray[..., 1] = arrs
+    #rgbArray[..., 2] = arrs
+
+    rgbArray *= 255
+
+    img = Image.fromarray(rgbArray)
     img = img.convert("RGB")
     img.save("mask_predicted.png")
 
