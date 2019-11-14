@@ -16,6 +16,7 @@ from eval import evaluation
 from helpers.batching import batch
 import torchvision
 import os
+from torchsummary import summary
 import time
 
 
@@ -74,11 +75,11 @@ def train_model(model,
         logging.info(f'Loss at  {epochs} : {epoch_loss}')
     save_mask_predicted(last_mask)
 
-        #torch.save(model.state_dict(), 'Weights/h.pth')
+    torch.save(model.state_dict(), 'Weights/h.pth')
 
-    #score = evaluation(model, test_dataset, device)
+    score = evaluation(model, test_dataset, device)
 
-    # logging.info(f'Validation score (soft dice method): {score}')
+    logging.info(f'Validation score (soft dice method): {score}')
 
 
 if __name__ == '__main__':
@@ -87,8 +88,8 @@ if __name__ == '__main__':
     # Hyperparameters
     num_epochs = 500
     num_classes = 2
-    batch_size = 10
-    learning_rate = 0.05
+    batch_size = 1
+    learning_rate = 0.001
     n_images = 1
     n_channels = 6
 
@@ -116,6 +117,9 @@ if __name__ == '__main__':
       #               f'\t6 input channels\n', f'\t2 output channels\n')
     model.to(device)
 
+    #Print the summary of the model
+    #summary(model, (6, 650, 650))
+
 try:
     train_model(model=model,
                 num_epochs=num_epochs,
@@ -130,3 +134,4 @@ finally:
     print("\nDone in " + str(int((t_end - t_start))) + " sec")
 
 # TODO start writing memoire to keep track of source (tqdm https://towardsdatascience.com/progress-bars-in-python-4b44e8a4c482)
+# TODO Use GRADCAM !!
