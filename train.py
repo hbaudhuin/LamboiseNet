@@ -75,7 +75,7 @@ def train_model(model,
         logging.info(f'Loss at  {epochs} : {epoch_loss}')
     save_mask_predicted(last_mask)
 
-    torch.save(model.state_dict(), 'Weights/h.pth')
+    #torch.save(model.state_dict(), 'Weights/h.pth')
 
     score = evaluation(model, test_dataset, device)
 
@@ -86,10 +86,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 500
+    num_epochs = 200
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.001
+    learning_rate = 0.01
     n_images = 1
     n_channels = 6
 

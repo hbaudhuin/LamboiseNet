@@ -3,6 +3,7 @@ import tifffile as tif
 from PIL import Image
 import imageio
 import torch
+import os
 
 
 image_num = [276, 277, 278, 280,
@@ -10,6 +11,7 @@ image_num = [276, 277, 278, 280,
              328, 332,
              356, 357, 358, 359, 360,
              385, 387, 389]
+
 
 def main():
 
@@ -113,6 +115,8 @@ def save_image(arrs, location):
 
     #print("saving")
     img = Image.fromarray(rgbArray)
+    if not os.path.exists(os.path.dirname(location)):
+        os.makedirs(os.path.dirname(location))
     img.save(location)
 
 
@@ -170,12 +174,17 @@ def process_patch(patch_number):
     b_all = open_image(b_path)
     a_all = open_image(a_path)
     m_all = open_image(m_path)
+    print(b_all.shape)
 
     for ir in range(5):
         for ic in range(5):
-            b_sub = b_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, ...]
-            a_sub = a_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, ...]
-            m_sub = m_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, ...]
+            b_sub = b_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, [0,1,2]]
+            a_sub = a_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, [0,1,2]]
+            m_sub = m_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, [0,1,2]]
+            b_sub = np.transpose(b_sub, axes=(2, 0, 1))
+            a_sub = np.transpose(a_sub, axes=(2, 0, 1))
+            m_sub = np.transpose(m_sub, axes=(2, 0, 1))
+            print(b_sub.shape)
 
             if np.average(b_sub) > 10 :
                 save_image(b_sub, "DATA/Paris_tmp_" + str(patch_number) + "_" + str(ir * 5 + ic) + "/before.png")
@@ -187,8 +196,7 @@ if __name__ == '__main__':
     import time
     t_start = time.time()
 
-    #main()
-    process_patch(1)
+    main()
     print("\ndone\n")
 
     t_end = time.time()
