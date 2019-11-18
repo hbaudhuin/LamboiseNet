@@ -146,12 +146,34 @@ def save_mask_predicted(mask_predicted):
     img.save("mask_predicted.png")
 
 
+def process_patch(patch_number):
+    patch = "patch" + str(patch_number)
+    b_path = "DATA/" + patch + "/" + patch + "_before_mod.png"
+    a_path = "DATA/" + patch + "/" + patch + "_after_norm.png"
+    m_path = "DATA/" + patch + "/" + patch + "_mask.png"
+
+    b_all = open_image(b_path)
+    a_all = open_image(a_path)
+    m_all = open_image(m_path)
+
+    for ir in range(5):
+        for ic in range(5):
+            b_sub = b_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, ...]
+            a_sub = a_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, ...]
+            m_sub = m_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, ...]
+
+            if np.average(b_sub) > 10 :
+                save_image(b_sub, "DATA/Paris_tmp_" + str(patch_number) + "_" + str(ir * 5 + ic) + "/before.png")
+                save_image(a_sub, "DATA/Paris_tmp_" + str(patch_number) + "_" + str(ir * 5 + ic) + "/after.png")
+                save_image(m_sub, "DATA/Paris_tmp_" + str(patch_number) + "_" + str(ir * 5 + ic) + "/mask.png")
+
 
 if __name__ == '__main__':
     import time
     t_start = time.time()
 
-    main()
+    #main()
+    process_patch(1)
     print("\ndone\n")
 
     t_end = time.time()
