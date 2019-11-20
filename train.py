@@ -1,7 +1,7 @@
 from sklearn.metrics import precision_recall_fscore_support as prfs
 
 from torch import *
-from Models.basicUnet import BasicUnet
+from Models.BasicUnet import BasicUnet
 import torch.utils.data
 import torch.optim as optim
 import torch.autograd as autograd
@@ -48,7 +48,7 @@ def train_model(model,
         with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
 
             for images, ground_truth  in train_dataset:
-                # TODO check input format
+
 
                 images = images.to(device)
                 ground_truth = ground_truth.to(device)
@@ -67,8 +67,6 @@ def train_model(model,
 
                 progress_bar.update(1)
 
-                # TODO update necessary for progress_bar ?
-
         # TODO add eval methods
         # TODO what is the evaluation metric
 
@@ -77,16 +75,17 @@ def train_model(model,
 
     #torch.save(model.state_dict(), 'Weights/h.pth')
 
-    score = evaluation(model, test_dataset, device)
+    #score = evaluation(model, test_dataset, device)
 
-    logging.info(f'Validation score (soft dice method): {score}')
+    #logging.info(f'Validation score (soft dice method): {score}')
 
 
 if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 200
+    num_epochs = 4
+
     num_classes = 2
     batch_size = 1
     learning_rate = 0.01

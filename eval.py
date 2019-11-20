@@ -1,5 +1,5 @@
 import torch
-import tqdm
+from tqdm import tqdm
 from loss import dice_loss
 
 def evaluation( model, dataset, device) :
@@ -7,9 +7,7 @@ def evaluation( model, dataset, device) :
     model.eval()
     loss =  0
     with tqdm(desc=f'Validation', unit='img') as progress_bar :
-        for i, data in enumerate(dataset) :
-            image = torch.from_numpy(data[0])
-            ground_truth = torch.from_numpy(data[1])
+        for image, ground_truth in dataset :
 
             image.to(device)
             ground_truth.to(device)
