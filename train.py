@@ -24,7 +24,7 @@ def train_model(model,
                 num_epochs,
                 batch_size,
                 learning_rate,
-                device):
+                device, reload):
     logging.info(f'''Strarting training : 
                 Type : {model.name}
                 Epochs: {num_epochs}
@@ -33,7 +33,8 @@ def train_model(model,
                 Device: {device.type}''')
 
     # TODO check if it's the best optimizer for our case
-
+    if reload :
+        model =torch.load('Weights/kek.pth')
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -74,10 +75,10 @@ def train_model(model,
 
         logging.info(f'Loss at  {epochs} : {epoch_loss}')
 
-    save_masks(last_masks, last_truths)
+    #save_masks(last_masks, last_truths)
 
-    #torch.save(model.state_dict(), 'Weights/h.pth')
-
+    torch.save(model.state_dict(), 'Weights/kek.pth')
+    logging.INFO("model saved")
     #score = evaluation(model, test_dataset, device)
 
     #logging.info(f'Validation score (soft dice method): {score}')
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 10
+    num_epochs = 0
 
     num_classes = 2
     batch_size = 1

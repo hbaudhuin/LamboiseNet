@@ -7,12 +7,12 @@ from augmentation import horizontalFlip, verticalFlip,  sharpen, gaussianBlur
 import os
 
 
-IMAGE_NUM = [276, 277, 278, 280,
-             301, 302, 303, 304, 305,
-             328, 331, 332,
-             356, 358, 359, 360,
-             385, 387, 389,
-             1180]
+IMAGE_NUM = [276]#, 277, 278, 280,
+           #  301, 302, 303, 304, 305,
+           #  328, 331, 332,
+            # 356, 358, 359, 360,
+             #385, 387, 389,
+            # 1180]
 
 
 def main():
