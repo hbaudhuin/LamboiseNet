@@ -156,8 +156,12 @@ def data_augmentation(before, after, mask):
     [flip_a, flip_b, flip_m ]= horizontalFlip(input)
     [flipV_a, flipV_b, flipV_m ]= verticalFlip(input)
     #[flipg_a, flipG_b] = addGaussianNoise(input[0:1])
-    [sharp_a, sharp_b] = sharpen(input[0:2], (0,1))
-    [blur_a, blur_b] = gaussianBlur(input[0:2], (0, 0.5))
+    [sharp_a, sharp_b] = sharpen(input[0:2], (0,3))
+
+
+    [blur_a, blur_b] = gaussianBlur(input[0:2], (1.5, 3.5))
+
+    #imageio.imwrite('myimg.png', blur_a)
 
     augmentedData.append(images_prepare(flip_b, flip_a, flip_m))
     augmentedData.append(images_prepare(flipV_b, flipV_a, flipV_m))
