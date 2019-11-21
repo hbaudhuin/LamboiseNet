@@ -128,7 +128,8 @@ try:
                 num_epochs=num_epochs,
                 batch_size=batch_size,
                 learning_rate=learning_rate,
-                device=device)
+                device=device,
+                reload = false)
 
 
 except KeyboardInterrupt:
