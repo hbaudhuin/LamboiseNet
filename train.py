@@ -38,7 +38,8 @@ def train_model(model,
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     transform = torchvision.transforms.Normalize(mean=0, std=1)
-    last_mask = None
+    last_masks = [None] * len(train_dataset)
+    last_truths = [None] * len(train_dataset)
     for epochs in range(num_epochs):
         # state intent of training to the model
         model.train()
@@ -47,14 +48,15 @@ def train_model(model,
         torch.autograd.set_detect_anomaly(True)
         with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
 
-            for images, ground_truth  in train_dataset:
+            for i, (images, ground_truth) in enumerate(train_dataset):
 
 
                 images = images.to(device)
+                last_truths[i] = ground_truth
                 ground_truth = ground_truth.to(device)
 
                 mask_predicted = model(images)
-                last_mask = mask_predicted
+                last_masks[i] = mask_predicted
 
                 loss = criterion(mask_predicted, ground_truth)
                 epoch_loss += loss.item()
@@ -71,7 +73,8 @@ def train_model(model,
         # TODO what is the evaluation metric
 
         logging.info(f'Loss at  {epochs} : {epoch_loss}')
-    save_mask_predicted(last_mask)
+
+    save_masks(last_masks, last_truths)
 
     #torch.save(model.state_dict(), 'Weights/h.pth')
 
@@ -84,7 +87,7 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 4
+    num_epochs = 10
 
     num_classes = 2
     batch_size = 1
@@ -125,6 +128,8 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device)
+
+
 except KeyboardInterrupt:
     torch.save(model.state_dict(), 'Weights/kek.pth')
     logging.info(f'Interrupted by Keyboard')

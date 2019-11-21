@@ -125,13 +125,15 @@ def save_image(arrs, location):
 def rgb_to_grey(mask):
     grey = np.zeros(shape=(mask.shape[0], mask.shape[1]), dtype=np.long)
     grey[...] = mask[..., 0]
-    grey[grey != 0] = 1
+    grey[grey != 0] = 1.0
     return grey
 
 
 def load_dataset(img_nums):
-    inputs = np.zeros(shape=(5*len(img_nums), 6, 650, 650)) # TODO un-hardcode
-    masks = np.zeros(shape=(5*len(img_nums), 650, 650), dtype=np.long)
+    #inputs = np.zeros(shape=(len(img_nums), 6, 650, 650))  # TODO un-hardcode
+    #masks = np.zeros(shape=(len(img_nums), 650, 650), dtype=np.long)
+    inputs = np.zeros(shape=(5 * len(img_nums), 6, 650, 650))  # TODO un-hardcode
+    masks = np.zeros(shape=(5 * len(img_nums), 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
         img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
@@ -148,11 +150,11 @@ def load_dataset(img_nums):
 
 def data_augmentation(before, after, mask):
     augmentedData = []
-    input = np.zeros((3,650, 650, 4))
+    input = np.zeros((3, 650, 650, 3))
 
-    input[0] = before
-    input[1] = after
-    input[2] = mask
+    input[0] = before[..., [0,1,2]]
+    input[1] = after[..., [0,1,2]]
+    input[2] = mask[..., [0,1,2]]
 
     [flip_a, flip_b, flip_m ]= horizontalFlip(input)
     [flipV_a, flipV_b, flipV_m ]= verticalFlip(input)
@@ -172,7 +174,68 @@ def data_augmentation(before, after, mask):
     return augmentedData
 
 
-def save_mask_predicted(mask_predicted):
+def save_masks(masks_predicted, ground_truths, max_img = 10):
+    max_img = min(max_img, len(masks_predicted))
+    from random import sample
+    smp = sample(list(range(len(masks_predicted))), max_img)
+    out = np.ones((max_img*650, 2*650, 3), 'uint8')
+
+    for i, n in enumerate(smp):
+        mp = masks_predicted[n]
+        gt = ground_truths[n]
+
+        arrs = np.zeros(shape=(650, 650))
+        try:
+            arrs[...] = mp.detach().numpy()[0, 0, ...]
+        except TypeError:
+            # Fix when we're running on CUDA
+            arrs[...] = mp.cpu().detach().numpy()[0, 0, ...]
+
+        lo = np.min(arrs)
+        hi = min(np.max(arrs), 2)
+        arrs = (arrs - lo) / max((hi - lo), 0.001)
+        arrs = 1 - arrs
+
+        rgbArray = np.ones((650, 650, 3), 'uint8')
+        rgbArray[..., 0] = arrs
+        rgbArray[..., 1] = arrs
+        # rgbArray[..., 2] = arrs
+
+        rgbArray *= 255
+
+        # GROUND TRUTH
+
+        gt_arrs = np.zeros(shape=(650, 650))
+        try:
+            gt_arrs[...] = gt.detach().numpy()[0, ...]
+        except TypeError:
+            # Fix when we're running on CUDA
+            gt_arrs[...] = gt.cpu().detach().numpy()[0, ...]
+
+        # lo = np.min(gt_arrs)
+        # hi = min(np.max(gt_arrs), 2)
+        # gt_arrs = (gt_arrs - lo) / max((hi - lo), 0.001)
+        # gt_arrs = 1 - gt_arrs
+
+        gt_rgbArray = np.ones((650, 650, 3), 'uint8')
+        gt_rgbArray[..., 0] = gt_arrs
+        gt_rgbArray[..., 1] = gt_arrs
+        gt_rgbArray[..., 2] = gt_arrs
+
+        gt_rgbArray *= 255
+
+        out[650*i:650*(i+1), 0:650, 0:3] = rgbArray
+        out[650*i:650*(i+1), 650:(2 * 650), 0:3] = gt_rgbArray
+
+    img = Image.fromarray(out)
+    img = img.convert("RGB")
+    img.save("mask_predicted.png")
+
+
+
+
+def save_mask_predicted(mask_predicted, ground_truth):
+
     arrs = np.zeros(shape=(650, 650))
     try:
         arrs[...] = mask_predicted.detach().numpy()[0, 0, ...]
@@ -182,7 +245,7 @@ def save_mask_predicted(mask_predicted):
 
     lo = np.min(arrs)
     hi = min(np.max(arrs),2)
-    arrs = (arrs - lo) / (hi - lo)
+    arrs = (arrs - lo) / max((hi - lo), 0.001)
     arrs = 1 - arrs
 
     rgbArray = np.ones((650, 650, 3), 'uint8')
@@ -192,7 +255,32 @@ def save_mask_predicted(mask_predicted):
 
     rgbArray *= 255
 
-    img = Image.fromarray(rgbArray)
+    # GROUND TRUTH
+
+    gt_arrs = np.zeros(shape=(650, 650))
+    try:
+        gt_arrs[...] = ground_truth.detach().numpy()[0, ...]
+    except TypeError:
+        # Fix when we're running on CUDA
+        gt_arrs[...] = ground_truth.cpu().detach().numpy()[0, ...]
+
+    #lo = np.min(gt_arrs)
+    #hi = min(np.max(gt_arrs), 2)
+    #gt_arrs = (gt_arrs - lo) / max((hi - lo), 0.001)
+    #gt_arrs = 1 - gt_arrs
+
+    gt_rgbArray = np.ones((650, 650, 3), 'uint8')
+    gt_rgbArray[..., 0] = gt_arrs
+    gt_rgbArray[..., 1] = gt_arrs
+    gt_rgbArray[..., 2] = gt_arrs
+
+    gt_rgbArray *= 255
+
+    fusion = np.ones((650, 2*650, 3), 'uint8')
+    fusion[0:650, 0:650, 0:3] = rgbArray
+    fusion[0:650, 650:(2*650), 0:3] = gt_rgbArray
+
+    img = Image.fromarray(fusion)
     img = img.convert("RGB")
     img.save("mask_predicted.png")
 
