@@ -19,9 +19,11 @@ class BasicUnet(nn.Module):
         self.input_layer = DoubleConvolutionLayer(n_channels, 64)
         self.downscaling_layer1 = self.downscaling_layer(64, 128)
         self.downscaling_layer2 = self.downscaling_layer(128, 256)
-        self.bottleneck = Bottleneck(256, 512, 256)
-        self.upscaling_layer1 = ExpandingLayer(512, 256, 128)
-        self.upscaling_layer2 = ExpandingLayer(256, 128, 64)
+        self.downscaling_layer3 = self.downscaling_layer(256, 512)
+        self.bottleneck = Bottleneck(512, 1024, 512)
+        self.upscaling_layer1 = ExpandingLayer(1024, 512, 256)
+        self.upscaling_layer2 = ExpandingLayer(512, 256, 128)
+        self.upscaling_layer3 = ExpandingLayer(256, 128, 64)
         self.output_layer = FinalLayer(128, 64, n_classes)
 
     def downscaling_layer(self, input_channels, output_channels):
@@ -33,13 +35,16 @@ class BasicUnet(nn.Module):
         down1 = self.input_layer(x)
         down2 = self.downscaling_layer1(down1)
         down3 = self.downscaling_layer2(down2)
-        bottleneck = self.bottleneck(down3)
-        concat = self.crop_and_cat(bottleneck, down3)
-        up3 = self.upscaling_layer1(concat)
-        concat2 = self.crop_and_cat(up3, down2)
-        up2 = self.upscaling_layer2(concat2)
-        concat3 = self.crop_and_cat(up2,down1)
-        up1 = self.output_layer(concat3)
+        down4 = self.downscaling_layer3(down3)
+        bottleneck = self.bottleneck(down4)
+        concat = self.crop_and_cat(bottleneck, down4)
+        up4 = self.upscaling_layer1(concat)
+        concat2 = self.crop_and_cat(up4, down3)
+        up3 = self.upscaling_layer2(concat2)
+        concat3 = self.crop_and_cat(up3,down2)
+        up2 =self.upscaling_layer3(concat3)
+        concat4 = self.crop_and_cat(up2, down1)
+        up1 = self.output_layer(concat4)
         return up1
 
     def crop_and_cat(self, x1, x2):

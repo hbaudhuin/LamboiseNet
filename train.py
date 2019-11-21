@@ -88,7 +88,7 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 0
+    num_epochs = 2
 
     num_classes = 2
     batch_size = 1
