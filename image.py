@@ -3,6 +3,7 @@ import tifffile as tif
 from PIL import Image
 import imageio
 import torch
+from augmentation import horizontalFlip, verticalFlip,  sharpen, gaussianBlur
 import os
 
 
@@ -129,16 +130,46 @@ def rgb_to_grey(mask):
 
 
 def load_dataset(img_nums):
-    inputs = np.zeros(shape=(len(img_nums), 6, 650, 650)) # TODO un-hardcode
-    masks = np.zeros(shape=(len(img_nums), 650, 650), dtype=np.long)
+    inputs = np.zeros(shape=(5*len(img_nums), 6, 650, 650)) # TODO un-hardcode
+    masks = np.zeros(shape=(5*len(img_nums), 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
         img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
         img_m = open_image("DATA/Paris_" + str(img_num) + "/mask.png")
         input, mask = images_prepare(img_b, img_a, img_m)
+        augmentedData = data_augmentation(img_a, img_b, img_m)
+        for l in range(1,len(augmentedData)):
+            inputs[i+l] = augmentedData[l][0]
+            masks[i+l] = augmentedData[l][1]
         inputs[i] = input
         masks[i] = mask
     return dataset_to_dataloader(inputs, masks)
+
+
+def data_augmentation(before, after, mask):
+    augmentedData = []
+    input = np.zeros((3,650, 650, 4))
+
+    input[0] = before
+    input[1] = after
+    input[2] = mask
+
+    [flip_a, flip_b, flip_m ]= horizontalFlip(input)
+    [flipV_a, flipV_b, flipV_m ]= verticalFlip(input)
+    #[flipg_a, flipG_b] = addGaussianNoise(input[0:1])
+    [sharp_a, sharp_b] = sharpen(input[0:2], (0,3))
+
+
+    [blur_a, blur_b] = gaussianBlur(input[0:2], (1.5, 3.5))
+
+    #imageio.imwrite('myimg.png', blur_a)
+
+    augmentedData.append(images_prepare(flip_b, flip_a, flip_m))
+    augmentedData.append(images_prepare(flipV_b, flipV_a, flipV_m))
+    # augmentedData.append(images_prepare(flipG_b, flipg_a, mask))
+    augmentedData.append(images_prepare(sharp_b, sharp_a, mask))
+    augmentedData.append(images_prepare(blur_b, blur_a, mask))
+    return augmentedData
 
 
 def save_mask_predicted(mask_predicted):

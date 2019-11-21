@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch
 from torch.nn import *
 import torch.nn.functional as F
+
 """Mini- Unet of 2 downscaling layers and 2 upscaling ones, 
     """
 
@@ -16,50 +17,38 @@ class BasicUnet(nn.Module):
         self.n_channels = n_channels
 
         self.input_layer = DoubleConvolutionLayer(n_channels, 64)
-        self.downscaling_layer1 = nn.Sequential(nn.MaxPool2d(2),
-                                                DoubleConvolutionLayer(64, 128))
-        self.downscaling_layer2 = nn.Sequential(nn.MaxPool2d(2),
-                                                DoubleConvolutionLayer(128, 256))
-        self.bottleneck =nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2, padding=1, output_padding=1)
-        # TODO add padding ?
-        self.up1 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.upscaling_layer1 = DoubleConvolutionLayer(256, 128)
-        self.bottleneck2 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, padding=1,
-                                             output_padding=1)
-        self.up2 =nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.upscaling_layer2 = DoubleConvolutionLayer(128, 64)
-        self.output_layer = DoubleConvolutionLayer(64, n_classes)
+        self.downscaling_layer1 = self.downscaling_layer(64, 128)
+        self.downscaling_layer2 = self.downscaling_layer(128, 256)
+        self.bottleneck = Bottleneck(256, 512, 256)
+        self.upscaling_layer1 = ExpandingLayer(512, 256, 128)
+        self.upscaling_layer2 = ExpandingLayer(256, 128, 64)
+        self.output_layer = FinalLayer(128, 64, n_classes)
+
+    def downscaling_layer(self, input_channels, output_channels):
+        layer = nn.Sequential(nn.MaxPool2d(2),
+                              DoubleConvolutionLayer(input_channels, output_channels))
+        return layer
 
     def forward(self, x):
-        out0 = self.input_layer(x)
-        out1 = self.downscaling_layer1(out0)
-        out = self.downscaling_layer2(out1)
-        bottleneck = self.bottleneck(out)
-        out = self.up1(bottleneck)
+        down1 = self.input_layer(x)
+        down2 = self.downscaling_layer1(down1)
+        down3 = self.downscaling_layer2(down2)
+        bottleneck = self.bottleneck(down3)
+        concat = self.crop_and_cat(bottleneck, down3)
+        up3 = self.upscaling_layer1(concat)
+        concat2 = self.crop_and_cat(up3, down2)
+        up2 = self.upscaling_layer2(concat2)
+        concat3 = self.crop_and_cat(up2,down1)
+        up1 = self.output_layer(concat3)
+        return up1
 
-        out = self.pad(out, out1)
-        out = torch.cat([out, out1], dim=1)
-        out = self.upscaling_layer1(out)
-
-        out = self.bottleneck2(out)
-        out = self.up2(out)
-        out = self.pad(out, out0)
-        out = torch.cat([out, out0], dim=1)
-        out0 = self.upscaling_layer2(out)
-        output = self.output_layer(out0)
-        return output
-
-
-    def pad(self, x1, x2) :
-
+    def crop_and_cat(self, x1, x2):
         diffY = x2.size()[2] - x1.size()[2]
         diffX = x2.size()[3] - x1.size()[3]
-       # print('sizes', x1.size(), x2.size(), diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2)
+        #print('sizes',x1.size(),x2.size(),diffX // 2, diffX - diffX//2, diffY // 2, diffY - diffY//2)
         x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
                         diffY // 2, diffY - diffY // 2])
-
-       # print('sizes', x1.size(), x2.size(), diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2)
-        return x1
+        return torch.cat([x1, x2], 1)
 
 
 class DoubleConvolutionLayer(nn.Module):
@@ -75,3 +64,41 @@ class DoubleConvolutionLayer(nn.Module):
     def forward(self, x):
         x = self.double_layer(x)
         return x
+
+
+class ExpandingLayer(nn.Module):
+    def __init__(self, input_channels, middle_channels, output_channels):
+        super(ExpandingLayer, self).__init__()
+        self.conv = DoubleConvolutionLayer(input_channels,middle_channels )
+        self.downscaling = nn.ConvTranspose2d(in_channels=middle_channels, out_channels=output_channels ,
+                                              kernel_size=3, stride=2, padding=1, output_padding=1)
+
+    def forward(self, x1):
+        x1 = self.conv(x1)
+        x1 = self.downscaling(x1)
+        return x1
+
+
+class Bottleneck(nn.Module):
+    def __init__(self, input_channels, middle_channels, output_channels) :
+        super(Bottleneck, self).__init__()
+        self.layer = nn.Sequential(nn.MaxPool2d(2),
+                                   DoubleConvolutionLayer(input_channels, middle_channels),
+                                   nn.ConvTranspose2d(in_channels=middle_channels, out_channels=output_channels,
+                                                      kernel_size=3, stride=2, padding=1, output_padding=1))
+    def forward(self, x):
+        x = self.layer(x)
+        return x
+
+class FinalLayer(nn.Module) :
+    def __init__(self, input_channels, middle_channels,output_channels) :
+        super(FinalLayer, self).__init__()
+
+        self.conv = nn.Sequential(DoubleConvolutionLayer(input_channels, middle_channels),
+                                  nn.Conv2d(middle_channels, output_channels, kernel_size=3, padding=1),
+                                  nn.BatchNorm2d(output_channels),
+                                  nn.ReLU(inplace=True))
+    def forward(self, x) :
+        x = self.conv(x)
+        return x
+
