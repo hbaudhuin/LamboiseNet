@@ -129,7 +129,7 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device,
-                reload = false)
+                reload = False)
 
 
 except KeyboardInterrupt:
