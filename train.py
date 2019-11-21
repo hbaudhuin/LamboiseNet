@@ -102,8 +102,8 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     #batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset([1180])
-    test_dataset = load_dataset([1180])
+    train_dataset = load_dataset(IMAGE_NUM)
+    test_dataset = load_dataset(IMAGE_NUM)
 
 
     logging.info(f'Batch size: {batch_size}')
