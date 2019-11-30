@@ -3,7 +3,7 @@ import tifffile as tif
 from PIL import Image
 import imageio
 import torch
-from augmentation import horizontalFlip, verticalFlip,  sharpen, gaussianBlur
+from augmentation import horizontalFlip, verticalFlip,  sharpen, gaussianBlur, hueAndSaturation, rgb_modifications
 import os
 
 
@@ -75,7 +75,7 @@ def dataset_to_dataloader(inputs, masks):
 
 
 def normalize(image):
-    #print("normalizing")
+    print("normalizing")
 
     # R G B, with sometimes a 4th Alpha channel on PNG
     arrs = [None, None, None]
@@ -138,6 +138,7 @@ def load_dataset(img_nums):
         img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
         img_m = open_image("DATA/Paris_" + str(img_num) + "/mask.png")
+
         input, mask = images_prepare(img_b, img_a, img_m)
         augmentedData = data_augmentation(img_a, img_b, img_m)
         for l in range(1,len(augmentedData)):
@@ -160,6 +161,11 @@ def data_augmentation(before, after, mask):
     [flipV_a, flipV_b, flipV_m ]= verticalFlip(input)
     #[flipg_a, flipG_b] = addGaussianNoise(input[0:1])
     [sharp_a, sharp_b] = sharpen(input[0:2], (0,3))
+    [hue_a, hue_b] = rgb_modifications(input[0:2], 4, 500)
+
+   # imageio.imwrite('myimg.png', hue_a)
+    testinput, _ = images_prepare(hue_b, hue_a, mask)
+    print(testinput[0:3].shape)
 
 
     [blur_a, blur_b] = gaussianBlur(input[0:2], (1.5, 3.5))

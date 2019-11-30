@@ -47,16 +47,6 @@ def verticalFlip(RGBarrays_list):
             i += 1
     return flipped
 
-    """def addGaussianNoise(RGBarrays_list) :
-    noised = RGBarrays_list.copy()
-    for i,img in enumerate(RGBarrays_list) :
-
-        shape = img.shape
-        # Adding Gaussian noise
-        noise = tf.random_normal(shape=shape, mean=0.0, stddev=1.0,
-                                 dtype=tf.float32)
-        noised[i] = tf.add(noised[i], noise)
-    return noised"""
 
 def sharpen(image, tuple):
     seq = iaa.Sequential(
@@ -70,6 +60,27 @@ def gaussianBlur(image, strength) :
     res = gauss(images=image)
     return res
 
+def hueAndSaturation(image, range):
+    modifier = iaa.AddToHueAndSaturation(range, per_channel=True)
+    print(image)
+    res = modifier(images=image.astype(float))
+    return res
+
+def rgb_modifications(images, alpha, beta):
+    # rand1 = np.randint(-255, 255)
+
+    res = images.copy()
+    i =0
+    for image in images :
+        res[i][:][:] = image[:][:] * alpha + beta
+        #print("result")
+       # print(res[i])
+       # print("modified")
+       # print(image)
+        #print("TEST")
+       # print(image[:][:]*125 + 4000)
+        i+=1
+    return res
 
 
 

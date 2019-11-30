@@ -4,7 +4,7 @@ import torch
 from torch.nn import *
 import torch.nn.functional as F
 
-"""Mini- Unet of 2 downscaling layers and 2 upscaling ones, 
+"""Unet 
     """
 
 
@@ -20,8 +20,7 @@ class BasicUnet(nn.Module):
         self.downscaling_layer1 = self.downscaling_layer(64, 128)
         self.downscaling_layer2 = self.downscaling_layer(128, 256)
         self.downscaling_layer3 = self.downscaling_layer(256, 512)
-        self.downscaling_layer4 = self.downscaling_layer(512, 1024)
-        self.bottleneck = Bottleneck(1024, 512, 1024)
+        self.bottleneck = Bottleneck(512, 1024, 512)
         self.upscaling_layer1 = ExpandingLayer(1024, 512, 256)
         self.upscaling_layer2 = ExpandingLayer(512, 256, 128)
         self.upscaling_layer3 = ExpandingLayer(256, 128, 64)
@@ -37,15 +36,14 @@ class BasicUnet(nn.Module):
         down2 = self.downscaling_layer1(down1)
         down3 = self.downscaling_layer2(down2)
         down4 = self.downscaling_layer3(down3)
-        down5 = self.downscaling_layer4(down4)
-        bottleneck = self.bottleneck(down5)
-        concat = self.crop_and_cat(bottleneck, down5)
+        bottleneck = self.bottleneck(down4)
+        concat = self.crop_and_cat(bottleneck, down4)
         up4 = self.upscaling_layer1(concat)
-        concat2 = self.crop_and_cat(up4, down4)
+        concat2 = self.crop_and_cat(up4, down3)
         up3 = self.upscaling_layer2(concat2)
-        concat3 = self.crop_and_cat(up3,down3)
+        concat3 = self.crop_and_cat(up3,down2)
         up2 =self.upscaling_layer3(concat3)
-        concat4 = self.crop_and_cat(up2, down2)
+        concat4 = self.crop_and_cat(up2, down1)
         up1 = self.output_layer(concat4)
         return up1
 
