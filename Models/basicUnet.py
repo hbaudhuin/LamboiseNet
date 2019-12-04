@@ -4,7 +4,7 @@ import torch
 from torch.nn import *
 import torch.nn.functional as F
 
-"""Mini- Unet of 2 downscaling layers and 2 upscaling ones, 
+"""Unet 
     """
 
 

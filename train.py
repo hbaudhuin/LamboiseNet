@@ -34,7 +34,7 @@ def train_model(model,
 
     # TODO check if it's the best optimizer for our case
     if reload :
-        model =torch.load('Weights/kek.pth')
+        model.load_state_dict(torch.load('Weights/last.kek'))
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -73,12 +73,12 @@ def train_model(model,
         # TODO add eval methods
         # TODO what is the evaluation metric
 
-        logging.info(f'Loss at  {epochs} : {epoch_loss}')
+        logging.info(f'Loss at  {epochs} : {epoch_loss/len(train_dataset)}')
 
-    #save_masks(last_masks, last_truths)
+    save_masks(last_masks, last_truths, max_img=100, shuffle=False)
 
-    torch.save(model.state_dict(), 'Weights/kek.pth')
-    logging.INFO("model saved")
+    torch.save(model.state_dict(), 'Weights/last.kek')
+    logging.info(f'Model saved')
     #score = evaluation(model, test_dataset, device)
 
     #logging.info(f'Validation score (soft dice method): {score}')
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 2
+    num_epochs = 1
 
     num_classes = 2
     batch_size = 1
@@ -129,11 +129,11 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device,
-                reload = False)
+                reload = True)
 
 
 except KeyboardInterrupt:
-    torch.save(model.state_dict(), 'Weights/kek.pth')
+    torch.save(model.state_dict(), 'Weights/last.kek')
     logging.info(f'Interrupted by Keyboard')
 finally:
     t_end = time.time()

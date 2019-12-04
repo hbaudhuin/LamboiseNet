@@ -7,12 +7,12 @@ from augmentation import horizontalFlip, verticalFlip,  sharpen, gaussianBlur, h
 import os
 
 
-IMAGE_NUM = [276]#, 277, 278, 280,
-           #  301, 302, 303, 304, 305,
-           #  328, 331, 332,
-            # 356, 358, 359, 360,
-             #385, 387, 389,
-            # 1180]
+IMAGE_NUM = [276, 277, 278, 280,
+             301, 302, 303, 304, 305,
+             328, 331, 332,
+             356, 358, 359, 360,
+             385, 387, 389,
+             1180]
 
 
 def main():
@@ -130,20 +130,20 @@ def rgb_to_grey(mask):
 
 
 def load_dataset(img_nums):
-    #inputs = np.zeros(shape=(len(img_nums), 6, 650, 650))  # TODO un-hardcode
-    #masks = np.zeros(shape=(len(img_nums), 650, 650), dtype=np.long)
-    inputs = np.zeros(shape=(5 * len(img_nums), 6, 650, 650))  # TODO un-hardcode
-    masks = np.zeros(shape=(5 * len(img_nums), 650, 650), dtype=np.long)
+    inputs = np.zeros(shape=(len(img_nums), 6, 650, 650))  # TODO un-hardcode
+    masks = np.zeros(shape=(len(img_nums), 650, 650), dtype=np.long)
+    #inputs = np.zeros(shape=(5 * len(img_nums), 6, 650, 650))  # TODO un-hardcode
+    #masks = np.zeros(shape=(5 * len(img_nums), 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
         img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
         img_m = open_image("DATA/Paris_" + str(img_num) + "/mask.png")
 
         input, mask = images_prepare(img_b, img_a, img_m)
-        augmentedData = data_augmentation(img_a, img_b, img_m)
-        for l in range(1,len(augmentedData)):
-            inputs[i+l] = augmentedData[l][0]
-            masks[i+l] = augmentedData[l][1]
+        #augmentedData = data_augmentation(img_a, img_b, img_m)
+        #for l in range(1,len(augmentedData)):
+        #    inputs[i+l] = augmentedData[l][0]
+        #    masks[i+l] = augmentedData[l][1]
         inputs[i] = input
         masks[i] = mask
     return dataset_to_dataloader(inputs, masks)
@@ -180,13 +180,22 @@ def data_augmentation(before, after, mask):
     return augmentedData
 
 
-def save_masks(masks_predicted, ground_truths, max_img = 10):
+def save_masks(masks_predicted, ground_truths, max_img = 10, shuffle = True):
+    #TODO clean the code
     max_img = min(max_img, len(masks_predicted))
+    import math
+    nrow = min(max_img, 10)
+    ncol = int(math.ceil(max_img/10))
     from random import sample
     smp = sample(list(range(len(masks_predicted))), max_img)
-    out = np.ones((max_img*650, 2*650, 3), 'uint8')
+    if not shuffle:
+        smp = list(range(len(masks_predicted)))[0:max_img]
+    out = np.ones((nrow*650, 2*650*ncol, 3), 'uint8')
 
     for i, n in enumerate(smp):
+        ir = i % 10
+        ic = int(math.floor(i/10))
+
         mp = masks_predicted[n]
         gt = ground_truths[n]
 
@@ -199,7 +208,7 @@ def save_masks(masks_predicted, ground_truths, max_img = 10):
 
         lo = np.min(arrs)
         hi = min(np.max(arrs), 2)
-        arrs = (arrs - lo) / max((hi - lo), 0.001)
+        #arrs = (arrs - lo) / max((hi - lo), 0.001)
         arrs = 1 - arrs
 
         rgbArray = np.ones((650, 650, 3), 'uint8')
@@ -230,8 +239,8 @@ def save_masks(masks_predicted, ground_truths, max_img = 10):
 
         gt_rgbArray *= 255
 
-        out[650*i:650*(i+1), 0:650, 0:3] = rgbArray
-        out[650*i:650*(i+1), 650:(2 * 650), 0:3] = gt_rgbArray
+        out[650*ir:650*(ir+1), (2*650*ic):(2*650*ic+650), 0:3] = rgbArray
+        out[650*ir:650*(ir+1), (2*650*ic+650):(2*650*(ic+1)), 0:3] = gt_rgbArray
 
     img = Image.fromarray(out)
     img = img.convert("RGB")
