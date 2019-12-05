@@ -1,7 +1,7 @@
 from sklearn.metrics import precision_recall_fscore_support as prfs
 
 from torch import *
-from Models.BasicUnet import BasicUnet
+from Models.basicUnet import BasicUnet
 import torch.utils.data
 import torch.optim as optim
 import torch.autograd as autograd
@@ -18,7 +18,7 @@ import torchvision
 import os
 from torchsummary import summary
 import time
-
+import matplotlib.pyplot as plt
 
 def train_model(model,
                 num_epochs,
@@ -34,13 +34,15 @@ def train_model(model,
 
     # TODO check if it's the best optimizer for our case
     if reload :
-        model.load_state_dict(torch.load('Weights/last.kek'))
+        #model.load_state_dict(torch.load('Weights/last.kek'))
+        model.load_state_dict(torch.load('Weights/kek.pth'))
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     transform = torchvision.transforms.Normalize(mean=0, std=1)
     last_masks = [None] * len(train_dataset)
     last_truths = [None] * len(train_dataset)
+    accuracies = []
     for epochs in range(num_epochs):
         # state intent of training to the model
         model.train()
@@ -75,20 +77,31 @@ def train_model(model,
 
         logging.info(f'Loss at  {epochs} : {epoch_loss/len(train_dataset)}')
 
+        score = evaluation(model, test_dataset, device)
+
+        accuracies.append(score)
+
+
     save_masks(last_masks, last_truths, max_img=100, shuffle=False)
 
     torch.save(model.state_dict(), 'Weights/last.kek')
     logging.info(f'Model saved')
-    #score = evaluation(model, test_dataset, device)
+    score = evaluation(model, test_dataset, device)
 
-    #logging.info(f'Validation score (soft dice method): {score}')
+    logging.info(f'Validation score (soft dice method): {score}')
+
+    plt.scatter( [i for i in range(0, num_epochs)], accuracies)
+    plt.xlabel("Epochs")
+    plt.ylabel("Soft-dice loss")
+    plt.show()
+    plt.savefig("Loss.png")
 
 
 if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 1
+    num_epochs = 2
 
     num_classes = 2
     batch_size = 1
@@ -105,8 +118,8 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     #batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM)
-    test_dataset = load_dataset(IMAGE_NUM)
+    train_dataset = load_dataset(IMAGE_NUM[0:3])
+    test_dataset = load_dataset(IMAGE_NUM[0:2])
 
 
     logging.info(f'Batch size: {batch_size}')
