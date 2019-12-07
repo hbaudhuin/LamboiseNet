@@ -327,6 +327,11 @@ def process_patch(patch_number):
                 save_image(m_sub, "DATA/Paris_tmp_" + str(patch_number) + "_" + str(ir * 5 + ic) + "/mask.png")
 
 
+def placeholder_file(path):
+    import os
+    if not os.path.exists(path):
+        with open(path, 'w'): pass
+
 if __name__ == '__main__':
     import time
     t_start = time.time()

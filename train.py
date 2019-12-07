@@ -19,6 +19,7 @@ import os
 from torchsummary import summary
 import time
 import matplotlib.pyplot as plt
+import datetime
 
 def train_model(model,
                 num_epochs,
@@ -34,8 +35,8 @@ def train_model(model,
 
     # TODO check if it's the best optimizer for our case
     if reload :
-        #model.load_state_dict(torch.load('Weights/last.kek'))
-        model.load_state_dict(torch.load('Weights/kek.pth'))
+        model.load_state_dict(torch.load('Weights/last.pth'))
+        #model.load_state_dict(torch.load('Weights/kek.pth'))
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -84,7 +85,11 @@ def train_model(model,
 
     save_masks(last_masks, last_truths, max_img=100, shuffle=False)
 
-    torch.save(model.state_dict(), 'Weights/last.kek')
+    torch.save(model.state_dict(), 'Weights/last.pth')
+    current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    placeholder_file('Weights/' + current_datetime + '.pth')
+    torch.save(model.state_dict(), 'Weights/' + current_datetime + '.pth')
+
     logging.info(f'Model saved')
     score = evaluation(model, test_dataset, device)
 
@@ -101,7 +106,7 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 2
+    num_epochs = 50
 
     num_classes = 2
     batch_size = 1
@@ -112,14 +117,14 @@ if __name__ == '__main__':
     # setup of log and device
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
-    logging.info(f'  Using  {device}')
+    logging.info(f'Using {device}')
 
     # dataset setup
 
     # transform into pytorch vector and normalise
     #batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:3])
-    test_dataset = load_dataset(IMAGE_NUM[0:2])
+    train_dataset = load_dataset(IMAGE_NUM)
+    test_dataset = load_dataset(IMAGE_NUM)
 
 
     logging.info(f'Batch size: {batch_size}')
@@ -142,11 +147,11 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device,
-                reload = True)
+                reload = False)
 
 
 except KeyboardInterrupt:
-    torch.save(model.state_dict(), 'Weights/last.kek')
+    torch.save(model.state_dict(), 'Weights/last.pth')
     logging.info(f'Interrupted by Keyboard')
 finally:
     t_end = time.time()

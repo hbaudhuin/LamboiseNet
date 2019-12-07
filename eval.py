@@ -9,10 +9,11 @@ def evaluation( model, dataset, device) :
     with tqdm(desc=f'Validation', unit='img') as progress_bar :
         for image, ground_truth in dataset :
 
-            image.to(device)
-            ground_truth.to(device)
+            image = image.to(device)
+            ground_truth = ground_truth.to(device)
 
-            mask_predicted = model(image)
+            with torch.no_grad():
+                mask_predicted = model(image)
 
             progress_bar.set_postfix(**{'loss': loss})
 
