@@ -35,15 +35,22 @@ def train_model(model,
 
     # TODO check if it's the best optimizer for our case
     if reload :
-        #model.load_state_dict(torch.load('Weights/last.pth'))
-        model.load_state_dict(torch.load('Weights/kek.pth'))
+        model.load_state_dict(torch.load('Weights/last.pth'))
+        #model.load_state_dict(torch.load('Weights/kek.pth'))
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     transform = torchvision.transforms.Normalize(mean=0, std=1)
     last_masks = [None] * len(train_dataset)
     last_truths = [None] * len(train_dataset)
+
     accuracies = []
+    if reload:
+        with open('Loss/last.pth', 'r') as acc_file:
+            prev_acc = np.loadtxt('Loss/last.pth')
+            for acc in prev_acc:
+                accuracies.append(acc)
+
     for epochs in range(num_epochs):
         # state intent of training to the model
         model.train()
@@ -85,7 +92,7 @@ def train_model(model,
 
     #save_masks(last_masks, last_truths, max_img=100, shuffle=False)
 
-    #torch.save(model.state_dict(), 'Weights/last.pth')
+    torch.save(model.state_dict(), 'Weights/last.pth')
     current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     placeholder_file('Weights/' + current_datetime + '.pth')
     torch.save(model.state_dict(), 'Weights/' + current_datetime + '.pth')
@@ -95,13 +102,14 @@ def train_model(model,
 
     logging.info(f'Validation score (soft dice method): {score}')
 
+    placeholder_file('Loss/' + 'learning_' +str(learning_rate) + '_epoch_' + str(num_epochs) + '_time_' + current_datetime + '.pth')
+    np.savetxt('Loss/' + 'learning_' +str(learning_rate) +'_epoch_'+ str(num_epochs)+ '_time_'+ current_datetime+'.pth', accuracies)
+    placeholder_file('Loss/last.pth')
+    np.savetxt('Loss/last.pth', accuracies)
 
-    placeholder_file('Loss/' + 'learning_' +str(learning_rate) +'_epoch_'+ str(num_epochs) +'time_'+ current_datetime+ '.pth')
-    np.savetxt('Loss/' + 'learning_' +str(learning_rate) +'_epoch_'+ str(num_epochs)+ 'time_'+ current_datetime+'.pth', accuracies)
-
-    plt.plot( [i for i in range(0, num_epochs)], accuracies)
+    plt.plot( [i for i in range(0, len(accuracies))], (accuracies))
     plt.xlabel("Epochs")
-    plt.ylabel("Soft-dice loss")
+    plt.ylabel("Cross-Entropy loss")
     plt.show()
     plt.savefig("Loss.png")
 
@@ -110,10 +118,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 2
+    num_epochs = 10
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.01
+    learning_rate = 0.0001
     n_images = 1
     n_channels = 6
 
@@ -126,8 +134,8 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     #batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:1])
-    test_dataset = load_dataset(IMAGE_NUM[0:1])
+    train_dataset = load_dataset(IMAGE_NUM)
+    test_dataset = load_dataset(IMAGE_NUM)
 
 
     logging.info(f'Batch size: {batch_size}')
