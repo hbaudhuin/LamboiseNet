@@ -184,7 +184,7 @@ def data_augmentation(before, after, mask):
     return augmentedData
 
 
-def save_masks(masks_predicted, ground_truths,device,  max_img = 10, shuffle = True):
+def save_masks(masks_predicted, ground_truths, device,  max_img = 10, shuffle = True):
     #TODO clean the code
     max_img = min(max_img, len(masks_predicted))
     import math
@@ -205,20 +205,32 @@ def save_masks(masks_predicted, ground_truths,device,  max_img = 10, shuffle = T
 
         arrs = np.zeros(shape=(2,650, 650))
         gt_arrs = np.zeros(shape=( 650, 650))
-        if device is 'cuda' :
+        if device == 'cuda' :
             arrs[...] = mp.cpu().detach().numpy()[0, ...]
             gt_arrs[...] = gt.cpu().detach().numpy()[0,0, ...]
         else :
             arrs[...] = mp.detach().numpy()[0, ...]
             gt_arrs[...] = gt.detach().numpy()[0,0, ...]
 
-
+        #print("ARRS TYPE", type(arrs))
+        #print("MASK MIN", np.min(arrs))
+        #print("MASK MAX", np.max(arrs))
+        #print("MASK AVG", np.mean(arrs))
         arrs = mask_to_image(arrs)
         arrs = 1 - arrs
+        #print("ARRS TYPE", type(arrs))
+        #print("MASK MIN", np.min(arrs))
+        #print("MASK MAX", np.max(arrs))
+        #print("MASK AVG", np.mean(arrs))
 
         rgbArray = np.ones((650, 650, 3), 'uint8')
         rgbArray[..., 0] = arrs
         rgbArray[..., 1] = arrs
+
+        #print("RGBARR TYPE", type(rgbArray))
+        #print("MASK MIN", np.min(rgbArray))
+        #print("MASK MAX", np.max(rgbArray))
+        #print("MASK AVG", np.mean(rgbArray))
 
         rgbArray *= 255
 
@@ -245,7 +257,7 @@ def save_mask_predicted(mask_predicted, ground_truth, device):
 
     arrs = np.zeros(shape=(650, 650))
     gt_arrs = np.zeros(shape=(650, 650))
-    if device is 'cuda' :
+    if device == 'cuda' :
         arrs[...] = mask_predicted.detach().numpy()[0, ...]
         gt_arrs[...] = ground_truth.detach().numpy()[0, ...]
     else :
@@ -323,6 +335,9 @@ def mask_to_image(masks) :
     mask = np.ones((650, 650))
     for i in range(650):
         for j in range(650) :
+            #TODO FIX
+            mask[i, j] = masks[1, i, j]
+            """
             selected_class = masks[:, i, j] > 0.5
             if len(selected_class) > 1 :
                 #print("Confidence above 0.5 for both")
@@ -332,6 +347,7 @@ def mask_to_image(masks) :
                 mask[ i, j] = 1
             else :
                 mask[i, j] = selected_class
+            """
     return mask
 
 def reverse_mask(mask) :

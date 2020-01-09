@@ -29,7 +29,7 @@ def train_model(model,
                 batch_size,
                 learning_rate,
                 device, reload):
-    logging.info(f'''Strarting training : 
+    logging.info(f'''Starting training : 
                 Type : {model.name}
                 Epochs: {num_epochs}
                 Batch size: {batch_size}
@@ -38,8 +38,8 @@ def train_model(model,
 
     # TODO check if it's the best optimizer for our case
     if reload :
-        model.load_state_dict(torch.load('backup_weights/last_backup.pth'))
-        #model.load_state_dict(torch.load('Weights/kek.pth'))
+        #model.load_state_dict(torch.load('backup_weights/last_backup.pth'))
+        model.load_state_dict(torch.load('Weights/last.pth'))
     criterion = nn.CrossEntropyLoss()
     weights = torch.ones(2)
     weights[0]= 0.25
@@ -78,9 +78,9 @@ def train_model(model,
                 #print(mask_predicted[0,0, 0:10, 0:10])
                 #print(mask_predicted[0, 0:10, 0:10])
                 last_masks[i] = mask_predicted
-                print(type(mask_predicted))
-                print(mask_predicted.shape)
-                print(ground_truth.shape)
+                #print(type(mask_predicted))
+                #print(mask_predicted.shape)
+                #print(ground_truth.shape)
                 #loss = criterion(mask_predicted, ground_truth)
 
                 loss = compute_loss(mask_predicted.type(torch.FloatTensor), ground_truth.type(torch.FloatTensor), bce_weight= 0.5)
@@ -105,11 +105,11 @@ def train_model(model,
 
         accuracies.append(score)
 
-
-    save_masks(last_masks, last_truths,device)
-    #torch.save(model.state_dict(), 'Weights/last.pth')
+    save_masks(last_masks, last_truths, str(device), max_img=20, shuffle=False)
+    placeholder_file('Weights/last.pth')
+    torch.save(model.state_dict(), 'Weights/last.pth')
     current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    placeholder_file('Weights/' + current_datetime + '.pth')
+    #placeholder_file('Weights/' + current_datetime + '.pth')
     #torch.save(model.state_dict(), 'Weights/' + current_datetime + '.pth')
 
     logging.info(f'Model saved')
@@ -152,6 +152,8 @@ if __name__ == '__main__':
     #batch_index= batch(batch_size, n_images)
     train_dataset = load_dataset(IMAGE_NUM[0:1])
     test_dataset = load_dataset(IMAGE_NUM[0:1])
+    #train_dataset = load_dataset(IMAGE_NUM)
+    #test_dataset = load_dataset(IMAGE_NUM)
 
 
     logging.info(f'Batch size: {batch_size}')
@@ -160,8 +162,8 @@ if __name__ == '__main__':
 
     # model creation
 
-    #model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
-    model = modularUnet(n_channels= n_channels, n_classes=num_classes, depth= 4)
+    model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    #model = modularUnet(n_channels= n_channels, n_classes=num_classes, depth= 4)
     logging.info(f'Network creation:\n' )
       #               f'\t6 input channels\n', f'\t2 output channels\n')
     model.to(device)
