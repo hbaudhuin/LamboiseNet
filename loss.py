@@ -15,11 +15,11 @@ def compute_loss(prediction, target, bce_weight):
 
     bce = F.binary_cross_entropy_with_logits(prediction, target)
 
-    pred = torch.sigmoid(prediction)
 
-    #dice = dice_loss(pred, target)
 
-    loss = bce#dice#bce * bce_weight + dice * (1 - bce_weight)
+    dice = tversky_loss(prediction, target, 0.7)
+
+    loss = bce * bce_weight + dice * (1 - bce_weight)
 
 
     return loss
@@ -56,6 +56,8 @@ def dice(input, target, smooth) :
 
 
 def tversky_loss(y_true, y_pred, beta):
+    y_pred = y_pred.clone()
+    y_true = y_true.clone()
     y_pred = torch.sigmoid(y_pred)
     try:
         y_pred = y_pred.detach().numpy()
