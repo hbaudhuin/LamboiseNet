@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch
 from torch.nn import *
 import torch.nn.functional as F
+import numpy as np
 
 """Unet 
     """
@@ -26,6 +27,7 @@ class BasicUnet(nn.Module):
         self.upscaling_layer3 = ExpandingLayer(256, 128, 64)
         self.output_layer = FinalLayer(128, 64, n_classes)
 
+
     def downscaling_layer(self, input_channels, output_channels):
         layer = nn.Sequential(nn.MaxPool2d(2),
                               DoubleConvolutionLayer(input_channels, output_channels))
@@ -45,6 +47,7 @@ class BasicUnet(nn.Module):
         up2 =self.upscaling_layer3(concat3)
         concat4 = self.crop_and_cat(up2, down1)
         up1 = self.output_layer(concat4)
+        #result = self.concatInOneMask(up1)
         return up1
 
     def crop_and_cat(self, x1, x2):

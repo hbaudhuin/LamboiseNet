@@ -1,6 +1,6 @@
 import torch as torch
 from tqdm import tqdm
-from loss import dice_loss, tversky_loss
+from loss import dice_loss, tversky_loss, compute_loss
 from image import save_masks
 
 
@@ -22,7 +22,7 @@ def evaluation( model, dataset, device, criterion) :
 
 
             progress_bar.set_postfix(**{'loss': loss})
-            loss +=criterion(mask_predicted, ground_truth).item()
+            loss +=compute_loss(mask_predicted.type(torch.FloatTensor), ground_truth.type(torch.FloatTensor), bce_weight= 0.5).item()
 
             #loss += tversky_loss(ground_truth, mask_predicted[0,0, :,:], beta = 0.85)
 
@@ -31,5 +31,9 @@ def evaluation( model, dataset, device, criterion) :
     loss /= len(dataset)
 
     return loss
+
+
+
+
 
 
