@@ -18,9 +18,9 @@ class BasicUnet(nn.Module):
         self.n_channels = n_channels
 
         self.input_layer = DoubleConvolutionLayer(n_channels, 64)
-        self.downscaling_layer1 = self.downscaling_layer(64, 128)
-        self.downscaling_layer2 = self.downscaling_layer(128, 256)
-        self.downscaling_layer3 = self.downscaling_layer(256, 512)
+        self.downscaling_layer1 = Downscaling_layer(64, 128)
+        self.downscaling_layer2 = Downscaling_layer(128, 256)
+        self.downscaling_layer3 = Downscaling_layer(256, 512)
         self.bottleneck = Bottleneck(512, 1024, 512)
         self.upscaling_layer1 = ExpandingLayer(1024, 512, 256)
         self.upscaling_layer2 = ExpandingLayer(512, 256, 128)
@@ -28,10 +28,6 @@ class BasicUnet(nn.Module):
         self.output_layer = FinalLayer(128, 64, n_classes)
 
 
-    def downscaling_layer(self, input_channels, output_channels):
-        layer = nn.Sequential(nn.MaxPool2d(2),
-                              DoubleConvolutionLayer(input_channels, output_channels))
-        return layer
 
     def forward(self, x):
         down1 = self.input_layer(x)
@@ -47,7 +43,6 @@ class BasicUnet(nn.Module):
         up2 =self.upscaling_layer3(concat3)
         concat4 = self.crop_and_cat(up2, down1)
         up1 = self.output_layer(concat4)
-        #result = self.concatInOneMask(up1)
         return up1
 
     def crop_and_cat(self, x1, x2):
@@ -57,6 +52,16 @@ class BasicUnet(nn.Module):
         x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
                         diffY // 2, diffY - diffY // 2])
         return torch.cat([x1, x2], 1)
+
+
+class Downscaling_layer(nn.Module):
+    def __init__(self, input_channels, output_channels):
+        super(Downscaling_layer,self).__init__()
+        self.layer = nn.Sequential(nn.MaxPool2d(2),
+                              DoubleConvolutionLayer(input_channels, output_channels))
+    def forward(self, x):
+        x = self.layer(x)
+        return x
 
 
 class DoubleConvolutionLayer(nn.Module):

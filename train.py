@@ -2,6 +2,7 @@ from sklearn.metrics import precision_recall_fscore_support as prfs
 
 from torch import *
 from Models.basicUnet import BasicUnet
+from Models.modularUnet import modularUnet
 import torch.utils.data
 import torch.optim as optim
 import torch.autograd as autograd
@@ -159,7 +160,8 @@ if __name__ == '__main__':
 
     # model creation
 
-    model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    #model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    model = modularUnet(n_channels= n_channels, n_classes=num_classes, depth= 4)
     logging.info(f'Network creation:\n' )
       #               f'\t6 input channels\n', f'\t2 output channels\n')
     model.to(device)
