@@ -3,7 +3,7 @@ import tifffile as tif
 from PIL import Image
 import imageio
 import torch
-from augmentation import horizontalFlip, verticalFlip,  sharpen, gaussianBlur, hueAndSaturation, rgb_modifications
+from augmentation import *
 import os
 
 
@@ -153,6 +153,18 @@ def load_dataset(img_nums):
     return dataset_to_dataloader(inputs, masks)
 
 
+def data_augmentation_test(img_nums):
+    for i, img_num in enumerate(img_nums):
+        img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
+        img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
+        img_m = open_image("DATA/Paris_" + str(img_num) + "/mask.png")
+
+
+        augmentedData = data_augmentation(img_a, img_b, img_m)
+
+
+
+
 def data_augmentation(before, after, mask):
     augmentedData = []
     input = np.zeros((3, 650, 650, 3))
@@ -161,26 +173,28 @@ def data_augmentation(before, after, mask):
     input[1] = after[..., [0,1,2]]
     input[2] = mask[..., [0,1,2]]
 
-    [flip_a, flip_b, flip_m ]= horizontalFlip(input)
-    [flipV_a, flipV_b, flipV_m ]= verticalFlip(input)
-    #[flipg_a, flipG_b] = addGaussianNoise(input[0:1])
-    [sharp_a, sharp_b] = sharpen(input[0:2], (0,3))
-    [hue_a, hue_b] = rgb_modifications(input[0:2], 4, 500)
+    #[#flip_a, flip_b, flip_m ]= horizontalFlip(input)
+    [flip_a, flip_b, flip_m ]= applyAugmentation(input)
+    #[flip_a, flip_b] = gaussianBlur(input[0:2],(1.5, 3.5))
+    #[flip_a, flip_b] = contrast(input[0:2], 1.05)
+    #[flip_a, flip_b] = gaussianNoise(input[0:2],(0, 70))
 
    # imageio.imwrite('myimg.png', hue_a)
-    testinput, _ = images_prepare(hue_b, hue_a, mask)
-    print(testinput[0:3].shape)
+    testinput, _ = images_prepare(flip_b, flip_a,flip_m)
+    #print(testinput[0:3].shape)
 
 
-    [blur_a, blur_b] = gaussianBlur(input[0:2], (1.5, 3.5))
+    #[blur_a, blur_b] = gaussianBlur(input[0:2], (1.5, 3.5))
 
-    #imageio.imwrite('myimg.png', blur_a)
+    imageio.imwrite('a.png', flip_a)
+    imageio.imwrite('b.png', flip_b)
+    imageio.imwrite('c.png', flip_m)
 
-    augmentedData.append(images_prepare(flip_b, flip_a, flip_m))
-    augmentedData.append(images_prepare(flipV_b, flipV_a, flipV_m))
+    #augmentedData.append(images_prepare(flip_b, flip_a, flip_m))
+    #augmentedData.append(images_prepare(flipV_b, flipV_a, flipV_m))
     # augmentedData.append(images_prepare(flipG_b, flipg_a, mask))
-    augmentedData.append(images_prepare(sharp_b, sharp_a, mask))
-    augmentedData.append(images_prepare(blur_b, blur_a, mask))
+    #augmentedData.append(images_prepare(sharp_b, sharp_a, mask))
+    #augmentedData.append(images_prepare(blur_b, blur_a, mask))
     return augmentedData
 
 
@@ -366,6 +380,7 @@ if __name__ == '__main__':
 
     main()
     print("\ndone\n")
+    data_augmentation_test([331])
 
     t_end = time.time()
     print("total time : " + str(int((t_end - t_start)*1000)/1000.0) + " sec")
