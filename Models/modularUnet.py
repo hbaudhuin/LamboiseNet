@@ -30,7 +30,6 @@ class modularUnet(nn.Module):
         bottleneck_result = self.bottleneck(x)
         cat = self.crop_and_cat(bottleneck_result, downscaling_res[-1])
         for i,layer in enumerate(self.upscaling_layers) :
-            print(cat.shape)
             res = layer(cat)
             cat = self.crop_and_cat(res,downscaling_res[-(i+2)] )
         result = self.output_layer(cat)

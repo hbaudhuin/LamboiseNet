@@ -133,39 +133,29 @@ def rgb_to_grey(mask):
     return grey
 
 
-def load_dataset(img_nums):
-    inputs = np.zeros(shape=(len(img_nums), 6, 650, 650))  # TODO un-hardcode
-    masks = np.zeros(shape=(len(img_nums), 2, 650, 650), dtype=np.long)
-    #inputs = np.zeros(shape=(5 * len(img_nums), 6, 650, 650))  # TODO un-hardcode
-    #masks = np.zeros(shape=(5 * len(img_nums), 650, 650), dtype=np.long)
+def load_dataset(img_nums, n_augmentation_per_image):
+
+    inputs = np.zeros(shape=((n_augmentation_per_image+1)* len(img_nums), 6, 650, 650))
+    masks = np.zeros(shape=((n_augmentation_per_image+1) * len(img_nums), 2, 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
         img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
         img_m = open_image("DATA/Paris_" + str(img_num) + "/mask.png")
 
         input, mask = images_prepare(img_b, img_a, img_m)
-        #augmentedData = data_augmentation(img_a, img_b, img_m)
-        #for l in range(1,len(augmentedData)):
-        #    inputs[i+l] = augmentedData[l][0]
-        #    masks[i+l] = augmentedData[l][1]
+        augmentedData = data_augmentation(img_a, img_b, img_m, n_augmentation_per_image)
+
+        for l in range(0,len(augmentedData)):
+            inputs[i+l] = augmentedData[l][0]
+            masks[i+l] = augmentedData[l][1]
         inputs[i] = input
         masks[i] = mask
     return dataset_to_dataloader(inputs, masks)
 
 
-def data_augmentation_test(img_nums):
-    for i, img_num in enumerate(img_nums):
-        img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
-        img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
-        img_m = open_image("DATA/Paris_" + str(img_num) + "/mask.png")
 
 
-        augmentedData = data_augmentation(img_a, img_b, img_m)
-
-
-
-
-def data_augmentation(before, after, mask):
+def data_augmentation(before, after, mask, n_augmentation):
     augmentedData = []
     input = np.zeros((3, 650, 650, 3))
 
@@ -173,28 +163,10 @@ def data_augmentation(before, after, mask):
     input[1] = after[..., [0,1,2]]
     input[2] = mask[..., [0,1,2]]
 
-    #[#flip_a, flip_b, flip_m ]= horizontalFlip(input)
-    [flip_a, flip_b, flip_m ]= applyAugmentation(input)
-    #[flip_a, flip_b] = gaussianBlur(input[0:2],(1.5, 3.5))
-    #[flip_a, flip_b] = contrast(input[0:2], 1.05)
-    #[flip_a, flip_b] = gaussianNoise(input[0:2],(0, 70))
+    for i in range(n_augmentation) :
+        [im_a,im_b,mask_c] = applyAugmentation(input)
+        augmentedData.append(images_prepare(im_b,im_a, mask_c))
 
-   # imageio.imwrite('myimg.png', hue_a)
-    testinput, _ = images_prepare(flip_b, flip_a,flip_m)
-    #print(testinput[0:3].shape)
-
-
-    #[blur_a, blur_b] = gaussianBlur(input[0:2], (1.5, 3.5))
-
-    imageio.imwrite('a.png', flip_a)
-    imageio.imwrite('b.png', flip_b)
-    imageio.imwrite('c.png', flip_m)
-
-    #augmentedData.append(images_prepare(flip_b, flip_a, flip_m))
-    #augmentedData.append(images_prepare(flipV_b, flipV_a, flipV_m))
-    # augmentedData.append(images_prepare(flipG_b, flipg_a, mask))
-    #augmentedData.append(images_prepare(sharp_b, sharp_a, mask))
-    #augmentedData.append(images_prepare(blur_b, blur_a, mask))
     return augmentedData
 
 
@@ -380,7 +352,6 @@ if __name__ == '__main__':
 
     main()
     print("\ndone\n")
-    data_augmentation_test([331])
 
     t_end = time.time()
     print("total time : " + str(int((t_end - t_start)*1000)/1000.0) + " sec")

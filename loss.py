@@ -2,30 +2,37 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 
-#TODO add other loss compution (jaccard, Tversky)
+
+# TODO add other loss compution jaccard
 
 
+def compute_loss(prediction, target, bce_weight, metrics):
+    # prediction[prediction > 1.0] = 1.0
 
-def compute_loss(prediction, target, bce_weight):
-    #prediction[prediction > 1.0] = 1.0
-
-
-    #prediction = torch.from_numpy(prediction)
-    #target = torch.from_numpy(target)
+    # prediction = torch.from_numpy(prediction)
+    # target = torch.from_numpy(target)
 
     bce = F.binary_cross_entropy_with_logits(prediction, target)
 
+    tvesrky = tversky_loss(prediction, target, 0.7)
 
+    loss = bce * bce_weight + tvesrky * (1 - bce_weight)
 
-    dice = tversky_loss(prediction, target, 0.7)
-
-    loss = bce * bce_weight + dice * (1 - bce_weight)
-
+    metrics["BCE"] +=bce
+    metrics["loss"] +=loss
+    metrics["tversky"] += tvesrky
 
     return loss
 
+def print_metrics(metrics, samples , phase):
+    outputs = []
+    for k in metrics.keys():
+        outputs.append("{}: {:4f}".format(k, metrics[k] / samples))
 
-#TODO variate epsilon
+    print("{}: {}".format(phase, ", ".join(outputs)))
+
+
+# TODO variate epsilon
 """SOFT dice loss"""
 """def dice_loss( predicted, truth, epsilon):
     #predicted = torch.sigmoid(predicted)
@@ -45,10 +52,10 @@ def compute_loss(prediction, target, bce_weight):
     return 1 -( numerator +epsilon) / (denominator +epsilon)"""
 
 
-def dice(input, target, smooth) :
+def dice(prediction, target):
     smooth = 1.
-    iflat = input#.view(-1)
-    tflat = target #.view(-1)
+    iflat = prediction  # .view(-1)
+    tflat = target  # .view(-1)
     intersection = (iflat * tflat).sum()
 
     return 1 - ((2. * intersection + smooth) /
@@ -71,17 +78,16 @@ def tversky_loss(y_true, y_pred, beta):
 
     denominator = y_true * y_pred + beta * (1 - y_true) * y_pred + (1 - beta) * y_true * (1 - y_pred)
 
-
     return 1 - (numerator + 1.) / (np.sum(denominator) + 1.)
 
 
-def dice_loss(pred, target):
+def dice_loss(prediction, target):
     smooth = 1.
 
-    pred = pred.clone().detach()
+    prediction = prediction.clone().detach()
     target = target.clone().detach()
 
-    pred = pred.contiguous()
+    prediction = prediction.contiguous()
     target = target.contiguous()
     """try:
         pred = pred.detach().numpy()
@@ -92,21 +98,20 @@ def dice_loss(pred, target):
         target = target.cpu().detach().numpy()
 
     """
-    intersection = (pred * target).sum(dim=2).sum(dim=2)
+    intersection = (prediction * target).sum(dim=2).sum(dim=2)
 
-    loss = (1 - ((2. * intersection + smooth) / (pred.sum(dim=2).sum(dim=2) + target.sum(dim=2).sum(dim=2) + smooth)))
+    loss = (1 - ((2. * intersection + smooth) / (prediction.sum(dim=2).sum(dim=2) + target.sum(dim=2).sum(dim=2) + smooth)))
     print(loss.mean())
     return loss.mean()
 
 
 if __name__ == '__main__':
-    predicted = np.zeros((3,3))
-    predicted[1, 1]= 1
+    predicted = np.zeros((3, 3))
+    predicted[1, 1] = 1
 
-    truth = np.ones((3,3))
-    #truth[1, :] = 1
+    truth = np.ones((3, 3))
+    # truth[1, :] = 1
 
-
-    #print(dice(predicted, truth, 1.))
+    # print(dice(predicted, truth, 1.))
     print(dice_loss(predicted, truth, 1.))
     print(tversky_loss(truth, predicted, 0.9))

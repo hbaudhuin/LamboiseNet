@@ -1,37 +1,37 @@
 import imgaug.augmenters as iaa
 import numpy as np
+from imgaug.augmenters import Affine
 
 
 def applyAugmentation(images):
     """
-    Aplly a random number of augmentation to the images.
-    OneOf = exactly one
-    someOf = a few
-    Sometimes(prob, if, else)
-    WithChannels(channels=None,
-
-    :param images:
-    :return:
+    Aply augmentations to the images. Augmentation are : vertical flipping, horzontal flipping, rotation, cropping,
+    shearing, scaling, blurring, contrast adjusting, adding noise and hue and saturation change. They are appied with a
+    certain probability.
+    :param images: RGB matrixes of two images and the corresponding mask
+    :return: RGB matrixes of two images and the corresponding mask with modification applied.
     """
-
-    #rotation
-    rotate_bounds = (0, 20)
-    #cropping
-    crop_bounds = (0, 0.3)
-    #shearing
-    tuple = (0.15, 20.0)
-    #scale
-    scalex_bound = (0.3, 1.5)
-    scaley_bound = (0.3, 1.7)
-    #blur
+    # HYPER-PARAMETERS
+    # rotation
+    rotate_bounds = (0, 10)
+    # cropping
+    crop_bounds = (0, 0.15)
+    # shearing
+    tuple = (0.15, 10.0)
+    # scale
+    scalex_bound = (1.0, 1.5)
+    scaley_bound = (1.0, 1.5)
+    # blur
     sigma = (np.random.uniform(0.2, 2.5), np.random.uniform(0.2, 2.5))
-    #contrast
-    gamma = (0.75,1.1)
-    #noise
-    scale = (0.6, 4)
-    #hue
-    range = (0, 20)
+    # contrast
+    gamma = (0.75, 1.1)
+    # noise
+    scale = (10, 50)
+    # hue
+    hue_range = (-70, 70)
 
+    # All values need to be fixed because the augmenter will choose a value between bounds randomly and both the images
+    # need to have the same rotation for example.
     shear_value = np.random.randint(tuple[0], tuple[1])
     rotate_value = np.random.randint(rotate_bounds[0], rotate_bounds[1])
     crop_value = np.random.uniform(crop_bounds[0], crop_bounds[1])
@@ -39,75 +39,81 @@ def applyAugmentation(images):
     scaley = np.random.uniform(scaley_bound[0], scaley_bound[1])
     gamma = np.random.uniform(gamma[0], gamma[1])
 
-
     sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 
+    # Modifications that need to be applied on the mask too to be consiteng. E.g. if the images are rotated,so must the
+    # mask be.
     sequence_on_all_images = iaa.Sequential(
-          [#sometimes(iaa.Affine(shear=(shear_value, shear_value))),
-           iaa.Sometimes(0.2,iaa.Affine(rotate=(rotate_value, rotate_value)))
-           #iaa.Fliplr(1),
-           #iaa.Flipud(1),
-           #iaa.Crop(percent=(crop_value, crop_value)),
-           #iaa.Affine(scale={"x": (scalex, scalex), "y": (scaley, scaley)})
-           ]
+        [iaa.Sometimes(0.2, iaa.Affine(shear=(shear_value, shear_value))),
+         iaa.Sometimes(0.2, iaa.Affine(rotate=(rotate_value, rotate_value))),
+         iaa.SomeOf((0, 4), [iaa.Fliplr(1),
+                             iaa.Flipud(1), iaa.Flipud(1), iaa.Flipud(1),
+                             iaa.Fliplr(1), iaa.Fliplr(1)]),
+         iaa.Sometimes(0.2, iaa.Crop(percent=(crop_value, crop_value))),
+         iaa.Sometimes(0.4, iaa.Affine(scale={"x": (scalex, scalex), "y": (scaley, scaley)}))
+         ]
     )
-    output = convertBackToUint(sequence_on_all_images(images = images))
+    output = convert_back_to_uint(sequence_on_all_images(images=images))
 
+    # Modifications that only should be applied on the images. Ex,  blur one image but don't blur the mask, it will
+    # impede in the learning.
     sequence_not_on_mask = iaa.Sequential([
-        iaa.Sometimes(0.3,iaa.GaussianBlur(sigma =sigma))
-        #iaa.GammaContrast(gamma = gamma),
-        #iaa.AddToHueAndSaturation(range, per_channel=True),
-        #iaa.AdditiveGaussianNoise(loc=0, scale=scale, per_channel=0.5)
+        iaa.Sometimes(0.4, iaa.GaussianBlur(sigma=sigma)),
+        sometimes(iaa.GammaContrast(gamma=gamma)),
+        iaa.Sometimes(0.4, iaa.AddToHueAndSaturation(hue_range, per_channel=0.5)),
+        iaa.Sometimes(0.4, iaa.AdditiveGaussianNoise(loc=0, scale=scale, per_channel=0.5))
     ])
-    output[0:2] = sequence_not_on_mask(images = output[0:2] )
-    return convertBackToUint(output)
+    output[0:1] = sequence_not_on_mask(images=output[0:1])
+    output[1:2] = sequence_not_on_mask(images=output[1:2])
+    return convert_back_to_uint(output)
 
 
-def verticalFlip(RGBarrays_list) :
+def vertical_flip(image):
     """
     Perform a vertical flip on the three images given in input
-    :param RGBarrays_list: The three input images in one matrix 650x650x(3+3+3)
+    :param image: The three input images in one matrix 650x650x(3+3+3)
     :return: The three input images in one matrix 650x650x(3+3+3) flipped on a vertical axis
     """
-    flipped = np.zeros(RGBarrays_list.shape)
-    for index, img in enumerate(RGBarrays_list):
+    flipped = np.zeros(image.shape)
+    for index, img in enumerate(image):
 
-        for index2 in [0,1,2]:
-            array = img[:,:,index2]
-            flipped[index,:,:,index2] = np.fliplr(array)
+        for index2 in [0, 1, 2]:
+            array = img[:, :, index2]
+            flipped[index, :, :, index2] = np.fliplr(array)
 
-    return convertBackToUint(flipped)
+    return convert_back_to_uint(flipped)
 
 
-def horizontalFlip(RGBarrays_list):
+def horizontal_flip(image):
     """
     Perform a horizontal flip on the three images given as input
-    :param RGBarrays_list: The three input images in one matrix 650x650x(3+3+3)
+    :param image: The three input images in one matrix 650x650x(3+3+3)
     :return: The three input images in one matrix 650x650x(3+3+3) flipped on a horizontal axis
     """
 
-    flipped = np.zeros(RGBarrays_list.shape)
-    for index, img in enumerate(RGBarrays_list):
+    flipped = np.zeros(image.shape)
+    for index, img in enumerate(image):
 
-        for index2 in [0,1,2]:
-            array = img[:,:,index2]
-            flipped[index,:,:,index2] = np.flip(array,1)
-    return convertBackToUint(flipped)
+        for index2 in [0, 1, 2]:
+            array = img[:, :, index2]
+            flipped[index, :, :, index2] = np.flip(array, 1)
+    return convert_back_to_uint(flipped)
 
 
-def shear(image, tuple):
+def shear(image, shear_bounds):
     """
     Shear the images
     :param image: RGB matrix of 3 input images
-    :param tuple: tuple with min and max bound of the shearing
+    :param shear_bounds: tuple with min and max bound of the shearing
     :return: RGB matrix of the sheared images
     """
-    shear_value =np.random.randint(tuple[0], tuple[1])
+    shear_value = np.random.randint(shear_bounds[0], shear_bounds[1])
     seq = iaa.Sequential([iaa.Affine(shear=(shear_value, shear_value))])
     images_aug = seq(images=image)
-    return convertBackToUint(images_aug)
+    return convert_back_to_uint(images_aug)
 
-def gaussianBlur(image, strength) :
+
+def gaussian_blur(image, strength):
     """
     Blur an image with a Gautian Blur
     :param image: the image(s) to be blurred. Can be multiple, blurring is independent of the number of images
@@ -115,21 +121,22 @@ def gaussianBlur(image, strength) :
     :return: RGB matrix of the input with blur
     """
     res = image.copy()
-    gauss = iaa.Sequential([iaa.GaussianBlur(sigma = strength)])
+    gauss = iaa.Sequential([iaa.GaussianBlur(sigma=strength)])
     images_to_modified = image[0:2]
-    res[0:2] = convertBackToUint(gauss(images=images_to_modified))
+    res[0:2] = convert_back_to_uint(gauss(images=images_to_modified))
     return res
 
-def hueAndSaturation(image, range):
+
+def hue_and_saturation(image, hue_range):
     """
     Change hue and saturation by value in range given
     :param image: RGB matrix of the two images. (uselles augmentation on a mask)
-    :param range: range of hue and saturation modification (-255, 255)
+    :param hue_range: range of hue and saturation modification (-255, 255)
     :return: RGB matrix
     """
     res = image.copy()
-    modifier = iaa.AddToHueAndSaturation(range, per_channel=True)
-    res[0:2] = modifier(images=convertBackToUint(image[0:2]))
+    modifier = iaa.AddToHueAndSaturation(hue_range, per_channel=True)
+    res[0:2] = modifier(images=convert_back_to_uint(image[0:2]))
     return res
 
 
@@ -141,11 +148,12 @@ def rotate(images, bounds):
     :return:  RGB matrixes of all images rotated
     """
     rotate_value = np.random.randint(bounds[0], bounds[1])
-    rotate = iaa.Affine(rotate=(rotate_value, rotate_value))
-    rotated_image = rotate(images = images)
-    return convertBackToUint(rotated_image)
+    rotating = iaa.Affine(rotate=(rotate_value, rotate_value))
+    rotated_image = rotating(images=images)
+    return convert_back_to_uint(rotated_image)
 
-def gaussianNoise(images, bounds):
+
+def gaussian_noise(images, bounds):
     """
     adding gaussian noise to images. Different noise for each image.
     :param images: RGB matrix of two input images. Nois on mask is useless
@@ -153,8 +161,8 @@ def gaussianNoise(images, bounds):
     :return: RGB matrix with gaussian Noise
     """
     noisy_images = images.copy()
-    gaussian_noise = iaa.AdditiveGaussianNoise(loc=0, scale=bounds, per_channel=0.5)
-    noisy_images[0:2] = gaussian_noise(images = convertBackToUint(images[0:2]))
+    gaussian_noise_adder = iaa.AdditiveGaussianNoise(loc=0, scale=bounds, per_channel=0.5)
+    noisy_images[0:2] = gaussian_noise_adder(images=convert_back_to_uint(images[0:2]))
     return noisy_images
 
 
@@ -166,22 +174,23 @@ def crop(images, bounds):
     :return:
     """
     crop_value = np.random.uniform(bounds[0], bounds[1])
-    crop = iaa.Crop(percent=(crop_value, crop_value))
-    cropped_images = crop(images = images)
-    return convertBackToUint(cropped_images)
+    croper = iaa.Crop(percent=(crop_value, crop_value))
+    cropped_images = croper(images=images)
+    return convert_back_to_uint(cropped_images)
 
 
 def contrast(images, gamma):
     """
     Modifie the contrast of an image by a gamma distribution.
     :param images: RGB matrixes of two images. contrast on mask is useless
-    :param gamma: value of gamma parameter (constraint to 0.8 and 1.05) If too high or low, the image is either black or overly saturated
+    :param gamma: value of gamma parameter (constraint to 0.8 and 1.05) If too high or low, the image is either black or
+     overly saturated
     :return: RBG matrix with contrast changed
     """
     contrasted_images = images.copy()
     contraster = iaa.GammaContrast(gamma=gamma)
-    contrasted_images[0:2] = contraster(images = images[0:2])
-    return convertBackToUint(contrasted_images)
+    contrasted_images[0:2] = contraster(images=images[0:2])
+    return convert_back_to_uint(contrasted_images)
 
 
 def scale(images, boundx, boundy):
@@ -194,19 +203,19 @@ def scale(images, boundx, boundy):
     """
     scalex = np.random.uniform(boundx[0], boundx[1])
     scaley = np.random.uniform(boundy[0], boundy[1])
-    scaler = iaa.Affine(scale ={"x": (scalex, scalex), "y": (scaley, scaley)})
-    scaled_images = scaler(images = images)
-    return convertBackToUint(scaled_images)
+    scaler = iaa.Affine(scale={"x": (scalex, scalex), "y": (scaley, scaley)})
+    scaled_images = scaler(images=images)
+    return convert_back_to_uint(scaled_images)
 
 
-
-def convertBackToUint(matrix):
+def convert_back_to_uint(matrix):
+    """
+    Helper functiun to turn a matrix back into a uint matrix. Applied to the RGB matrixes after modification. Changes
+    applied ususally result into a float matrix.
+    :param matrix: A 650 x650 matrix of float
+    :return: the matrix with all value rounded to uint.
+    """
     matrix = matrix.astype(np.float64) / 255
     data = 255 * matrix
     img = data.astype(np.uint8)
     return img
-
-
-
-
-
