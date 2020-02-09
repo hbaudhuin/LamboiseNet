@@ -26,45 +26,46 @@ def applyAugmentation(images):
     # contrast
     gamma = (0.75, 1.1)
     # noise
-    scale = (10, 50)
+    scale_noise = (10, 50)
     # hue
     hue_range = (-70, 70)
 
-    # All values need to be fixed because the augmenter will choose a value between bounds randomly and both the images
-    # need to have the same rotation for example.
-    shear_value = np.random.randint(tuple[0], tuple[1])
-    rotate_value = np.random.randint(rotate_bounds[0], rotate_bounds[1])
-    crop_value = np.random.uniform(crop_bounds[0], crop_bounds[1])
-    scalex = np.random.uniform(scalex_bound[0], scalex_bound[1])
-    scaley = np.random.uniform(scaley_bound[0], scaley_bound[1])
-    gamma = np.random.uniform(gamma[0], gamma[1])
-
-    sometimes = lambda aug: iaa.Sometimes(0.5, aug)
-
     # Modifications that need to be applied on the mask too to be consiteng. E.g. if the images are rotated,so must the
     # mask be.
-    sequence_on_all_images = iaa.Sequential(
-        [iaa.Sometimes(0.2, iaa.Affine(shear=(shear_value, shear_value))),
-         iaa.Sometimes(0.2, iaa.Affine(rotate=(rotate_value, rotate_value))),
-         iaa.SomeOf((0, 4), [iaa.Fliplr(1),
-                             iaa.Flipud(1), iaa.Flipud(1), iaa.Flipud(1),
-                             iaa.Fliplr(1), iaa.Fliplr(1)]),
-         iaa.Sometimes(0.2, iaa.Crop(percent=(crop_value, crop_value))),
-         iaa.Sometimes(0.4, iaa.Affine(scale={"x": (scalex, scalex), "y": (scaley, scaley)}))
-         ]
-    )
-    output = convert_back_to_uint(sequence_on_all_images(images=images))
+    output = images
+    dice = np.random.randint(0,10) / 10.0
+    if dice < 0.2 :
+        output = shear(images, tuple)
+    if dice < 0.3 :
+        output = rotate(output, rotate_bounds)
 
-    # Modifications that only should be applied on the images. Ex,  blur one image but don't blur the mask, it will
-    # impede in the learning.
-    sequence_not_on_mask = iaa.Sequential([
-        iaa.Sometimes(0.4, iaa.GaussianBlur(sigma=sigma)),
-        sometimes(iaa.GammaContrast(gamma=gamma)),
-        iaa.Sometimes(0.4, iaa.AddToHueAndSaturation(hue_range, per_channel=0.5)),
-        iaa.Sometimes(0.4, iaa.AdditiveGaussianNoise(loc=0, scale=scale, per_channel=0.5))
-    ])
-    output[0:1] = sequence_not_on_mask(images=output[0:1])
-    output[1:2] = sequence_not_on_mask(images=output[1:2])
+    for i in range(0,5):
+        dice = np.random.randint(0, 10) / 10.0
+        if dice < 0.4:
+            output = horizontal_flip(output)
+        if dice > 0.7:
+            output = vertical_flip(output)
+
+    dice = np.random.randint(0, 10) / 10.0
+    if dice < 0.3:
+        output = crop(output, crop_bounds)
+
+    dice = np.random.randint(0, 10) / 10.0
+    if dice > 0.5:
+        output = scale(output, scalex_bound, scaley_bound)
+
+    dice = np.random.randint(0, 10) / 10.0
+    if dice <=0.4:
+        output= gaussian_blur(output, sigma)
+    dice = np.random.randint(0, 10) / 10.0
+    if dice >0.5:
+        output= contrast(output, gamma)
+    dice = np.random.randint(0, 10) / 10.0
+    if dice > 0.4:
+        output=hue_and_saturation(output, hue_range)
+    dice = np.random.randint(0, 10) / 10.0
+    if dice > 0.35:
+        output = gaussian_noise(output, scale_noise)
     return convert_back_to_uint(output)
 
 

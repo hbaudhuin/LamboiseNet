@@ -132,9 +132,9 @@ if __name__ == '__main__':
 
     # Hyperparameters
     num_epochs = 2
-    num_classes = 2
+    num_classes = 1
     batch_size = 1
-    learning_rate = 0.01
+    learning_rate = 0.001
     n_images = 1
     n_channels = 6
 
@@ -147,8 +147,8 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     # batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:2], 2)
-    test_dataset = load_dataset(IMAGE_NUM[3:4], 2)
+    train_dataset = load_dataset(IMAGE_NUM[0:2], 0)
+    test_dataset = load_dataset(IMAGE_NUM[3:4], 0)
     # train_dataset = load_dataset(IMAGE_NUM)
     # test_dataset = load_dataset(IMAGE_NUM)
 
