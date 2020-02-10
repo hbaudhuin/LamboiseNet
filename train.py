@@ -31,8 +31,8 @@ def train_model(model,
                 Saving model : {save_model}''')
 
     if reload:
-        model.load_state_dict(torch.load('backup_weights/last_backup.pth'))
-        # model.load_state_dict(torch.load('Weights/kek.pth'))
+        #model.load_state_dict(torch.load('backup_weights/last_backup.pth'))
+        model.load_state_dict(torch.load('Weights/last.pth'))
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -46,9 +46,17 @@ def train_model(model,
             prev_acc = np.loadtxt('Loss/last.pth')
             for acc in prev_acc:
                 accuracies.append(acc)
-
+    changed =5
     for epochs in range(0, num_epochs):
         logging.info(f'Epoch {epochs}')
+        if len(accuracies) > 4 :
+            if np.linalg.norm(accuracies[-1:-4]) < 0.01 and changed < 1:
+                changed = 4
+                logging.info(f'Learning rate going to {learning_rate/3}')
+                learning_rate /= 3
+                optimizer.lr = learning_rate
+            else :
+                changed -=1
         torch.autograd.set_detect_anomaly(True)
         accuracy = 0
         #Every epoch has a training and validation phase
@@ -67,14 +75,22 @@ def train_model(model,
                     last_truths[i] = ground_truth
                     ground_truth = ground_truth.to(device)
 
-                    mask_predicted = model(images)
+                    # TODO Clean Fix
+                    mask_predicted = None
+                    if phase == 'train':
+                        mask_predicted = model(images)
+                    else:
+                        with torch.no_grad():
+                            mask_predicted = model(images)
                     last_masks[i] = mask_predicted
+
 
                     # During the training, we backpropagate the error
                     if phase == 'train':
                         loss = compute_loss(mask_predicted.type(torch.FloatTensor),
                                             ground_truth.type(torch.FloatTensor),
                                             bce_weight=0.5, metrics=metrics)
+                        #loss = compute_loss(mask_predicted, ground_truth, bce_weight=0.5, metrics=metrics)
                         epoch_loss += loss.item()
                         progress_bar.set_postfix(**{'loss': loss.item()})
 
@@ -91,7 +107,7 @@ def train_model(model,
 
                     progress_bar.update(1)
 
-            print_metrics(metrics, len(train_dataset), phase)
+            #print_metrics(metrics, len(train_dataset), phase)
             if phase == 'val':
                 accuracies.append(accuracy)
 
@@ -122,8 +138,8 @@ def train_model(model,
     plt.plot([i for i in range(0, len(accuracies))], accuracies)
     plt.xlabel("Epochs")
     plt.ylabel("Cross-Entropy with BCE loss")
-    plt.show()
     plt.savefig("Loss.png")
+    plt.show()
     plt.close("Loss.png")
 
 
@@ -131,10 +147,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 2
+    num_epochs = 30
     num_classes = 1
     batch_size = 1
-    learning_rate = 0.001
+    learning_rate = 0.01
     n_images = 1
     n_channels = 6
 
@@ -147,8 +163,8 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     # batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:2], 0)
-    test_dataset = load_dataset(IMAGE_NUM[3:4], 0)
+    train_dataset = load_dataset(IMAGE_NUM[3:6], 0)
+    test_dataset = load_dataset(IMAGE_NUM[3:6], 0)
     # train_dataset = load_dataset(IMAGE_NUM)
     # test_dataset = load_dataset(IMAGE_NUM)
 
@@ -158,8 +174,8 @@ if __name__ == '__main__':
 
     # model creation
 
-    # model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
-    model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=4)
+    model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=4)
     model.to(device)
     logging.info(f'Network creation:\n')
 
@@ -173,7 +189,7 @@ try:
                 learning_rate=learning_rate,
                 device=device,
                 reload=False,
-                save_model=False)
+                save_model=True)
 
 
 except KeyboardInterrupt:

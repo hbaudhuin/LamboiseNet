@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import torch.nn.functional as F
+import torch.nn as nn
 
 
 # TODO add other loss compution jaccard
@@ -12,11 +13,37 @@ def compute_loss(prediction, target, bce_weight, metrics):
     # prediction = torch.from_numpy(prediction)
     # target = torch.from_numpy(target)
 
+    #print("pred", prediction.shape)
+    #print("targ", target.shape)
+
+    #print(prediction_.shape)
+    #print(type(prediction_))
+
+    #print(target)
+
+    pred_min = np.min(prediction.cpu().detach().numpy())
+    pred_max = np.max(prediction.cpu().detach().numpy())
+    pred_avg = np.average(prediction.cpu().detach().numpy())
+
+    print("pred", pred_min, pred_max, pred_avg)
+
+    targ_min = np.min(target.cpu().detach().numpy())
+    targ_max = np.max(target.cpu().detach().numpy())
+    targ_avg = np.average(target.cpu().detach().numpy())
+
+    print("targ", targ_min, targ_max, targ_avg)
+
+
     bce = F.binary_cross_entropy_with_logits(prediction, target)
+    #bce = torch.mean(torch.abs((1.0*target) - prediction))
 
-    tvesrky = tversky_loss(prediction, target, 0.7)
+    tvesrky = tversky_loss(prediction, target, 0.5)
 
-    loss = bce * bce_weight + tvesrky * (1 - bce_weight)
+    #criterion = nn.CrossEntropyLoss()
+    #ce = criterion(prediction_, prediction_)
+
+    loss = bce #* bce_weight # + tvesrky * (1 - bce_weight)
+    #loss = ce
 
     metrics["BCE"] +=bce
     metrics["loss"] +=loss

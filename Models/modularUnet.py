@@ -1,7 +1,8 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-from Models.basicUnet import Downscaling_layer, ExpandingLayer,DoubleConvolutionLayer,FinalLayer,Bottleneck
+from Models.basicUnet import Downscaling_layer, ExpandingLayer, DoubleConvolutionLayer, FinalLayer, Bottleneck
+
 
 class modularUnet(nn.Module):
     def __init__(self, n_channels, n_classes, depth):
@@ -10,20 +11,33 @@ class modularUnet(nn.Module):
         self.n_classes = n_classes
         self.n_channels = n_channels
         self.input_layer = DoubleConvolutionLayer(n_channels, 64)
-        self.upscaling_layers = []
-        self.downscaling_layers = []
+        self.upscaling_layers = nn.ModuleList()
+        self.upscaling_layers_tmp = []
+        self.downscaling_layers = nn.ModuleList()
         for i in range(1,depth):
             layer_depths = (2**(i-1))*64
             self.downscaling_layers.append(Downscaling_layer(layer_depths, layer_depths*2))
-            self.upscaling_layers.append(ExpandingLayer(layer_depths*4, layer_depths*2, layer_depths))
-        self.upscaling_layers.reverse()
+            self.upscaling_layers_tmp.append(ExpandingLayer(layer_depths*4, layer_depths*2, layer_depths))
+
+        #self.upscaling_layers.reverse() # Cannot be used with nn.ModuleList
+        # Custom list reverse
+        for ilayer in range(len(self.upscaling_layers_tmp)):
+            self.upscaling_layers.append(self.upscaling_layers_tmp[len(self.upscaling_layers_tmp)-1-ilayer])
+
         self.bottleneck = Bottleneck(64*(2**(depth-1)), 64*(2**depth), 64*(2**(depth-1)))
         self.output_layer = FinalLayer(128, 64, n_classes)
 
-    def forward(self, x):
+        #for i, layer in enumerate(self.upscaling_layers):
+        #    self.register_buffer('up_layer_'+str(i), layer)
+        #for i, layer in enumerate(self.downscaling_layers):
+        #    self.register_buffer('down_layer_'+str(i), layer)
+
+
+
+    def forward(self, x_):
         downscaling_res = []
-        x = self.input_layer(x)
-        for layer in self.downscaling_layers :
+        x = self.input_layer(x_)
+        for layer in self.downscaling_layers:
             downscaling_res.append(x)
             x = layer(x)
         downscaling_res.append(x)

@@ -7,12 +7,7 @@ from augmentation import *
 import os
 
 
-IMAGE_NUM = [276, 277, 278, 280,
-             301, 302, 303, 304, 305,
-             328, 331, 332,
-             356, 358, 359, 360,
-             385, 387, 389,
-             1180]
+IMAGE_NUM = list(range(1, 21))
 
 
 def main():
@@ -65,7 +60,7 @@ def images_prepare(img_before, img_after, img_mask):
     i_m_join = np.zeros(shape = (2, i_m.shape[0], i_m.shape[1]))
     i_m_join[0,...] = i_m
     i_m_join[1,...] = i_m_reverse
-    return i_join, i_m_join
+    return i_join, i_m_reverse
 
 
 def dataset_to_dataloader(inputs, masks):
@@ -135,8 +130,8 @@ def rgb_to_grey(mask):
 
 def load_dataset(img_nums, n_augmentation_per_image):
 
-    inputs = np.zeros(shape=((n_augmentation_per_image+1)* len(img_nums), 6, 650, 650))
-    masks = np.zeros(shape=((n_augmentation_per_image+1) * len(img_nums), 2, 650, 650), dtype=np.long)
+    inputs = np.zeros(shape=((n_augmentation_per_image+1) * len(img_nums), 6, 650, 650))
+    masks  = np.zeros(shape=((n_augmentation_per_image+1) * len(img_nums), 1, 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
         img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
@@ -150,6 +145,8 @@ def load_dataset(img_nums, n_augmentation_per_image):
             masks[i+l] = augmentedData[l][1]
         inputs[i] = input
         masks[i] = mask
+        #print("inputs", type(inputs), inputs.shape)
+        #print("masks ", type(masks), masks.shape)
     return dataset_to_dataloader(inputs, masks)
 
 
@@ -189,8 +186,8 @@ def save_masks(masks_predicted, ground_truths, device,  max_img = 10, shuffle = 
         mp = masks_predicted[n]
         gt = ground_truths[n]
 
-        arrs = np.zeros(shape=(2,650, 650))
-        gt_arrs = np.zeros(shape=( 650, 650))
+        arrs = np.zeros(shape=(2, 650, 650))
+        gt_arrs = np.zeros(shape=(650, 650))
         if device == 'cuda' :
             arrs[...] = mp.cpu().detach().numpy()[0, ...]
             gt_arrs[...] = gt.cpu().detach().numpy()[0,0, ...]
@@ -318,7 +315,7 @@ def placeholder_file(path):
 
 
 def mask_to_image(masks) :
-    mask = np.ones((650, 650))
+    mask = np.zeros((650, 650))
     for i in range(650):
         for j in range(650) :
             #TODO FIX
