@@ -21,33 +21,36 @@ def compute_loss(prediction, target, bce_weight, metrics):
 
     #print(target)
 
-    pred_min = np.min(prediction.cpu().detach().numpy())
-    pred_max = np.max(prediction.cpu().detach().numpy())
-    pred_avg = np.average(prediction.cpu().detach().numpy())
+    #pred_min = np.min(prediction.cpu().detach().numpy())
+    #pred_max = np.max(prediction.cpu().detach().numpy())
+    #pred_avg = np.average(prediction.cpu().detach().numpy())
 
-    print("pred", pred_min, pred_max, pred_avg)
+    #print("pred", pred_min, pred_max, pred_avg)
 
-    targ_min = np.min(target.cpu().detach().numpy())
-    targ_max = np.max(target.cpu().detach().numpy())
-    targ_avg = np.average(target.cpu().detach().numpy())
+    #targ_min = np.min(target.cpu().detach().numpy())
+    #targ_max = np.max(target.cpu().detach().numpy())
+    #targ_avg = np.average(target.cpu().detach().numpy())
 
-    print("targ", targ_min, targ_max, targ_avg)
+    #print("targ", targ_min, targ_max, targ_avg)
 
 
-    bce = F.binary_cross_entropy_with_logits(prediction, target)
+    #bce = F.binary_cross_entropy_with_logits(prediction, target)
     #bce = torch.mean(torch.abs((1.0*target) - prediction))
 
-    tvesrky = tversky_loss(prediction, target, 0.5)
+    #tvesrky = tversky_loss(prediction, target, 0.5)
 
     #criterion = nn.CrossEntropyLoss()
     #ce = criterion(prediction_, prediction_)
 
-    loss = bce #* bce_weight # + tvesrky * (1 - bce_weight)
+    #loss = bce #* bce_weight # + tvesrky * (1 - bce_weight)
     #loss = ce
 
-    metrics["BCE"] +=bce
-    metrics["loss"] +=loss
-    metrics["tversky"] += tvesrky
+    criterion = nn.CrossEntropyLoss()
+    loss = criterion(prediction, target)
+
+    metrics["BCE"] += 0 #bce
+    metrics["loss"] += loss
+    metrics["tversky"] += 0 #tvesrky
 
     return loss
 

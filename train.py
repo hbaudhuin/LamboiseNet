@@ -33,7 +33,8 @@ def train_model(model,
     if reload:
         #model.load_state_dict(torch.load('backup_weights/last_backup.pth'))
         model.load_state_dict(torch.load('Weights/last.pth'))
-
+        #model.load_state_dict(torch.load('Weights/kek.pth'))
+    criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     last_masks = [None] * len(train_dataset)
@@ -75,6 +76,17 @@ def train_model(model,
                     last_truths[i] = ground_truth
                     ground_truth = ground_truth.to(device)
 
+                    '''
+                    gt = ground_truth.cpu().detach().numpy()
+                    print("")
+                    print("GT SHP", gt.shape)
+                    print("GT MIN", np.min(gt))
+                    print("GT MAX", np.max(gt))
+                    print("GT AVG", np.mean(gt))
+                    plt.imshow(gt[0,:,:])
+                    plt.show()
+                    '''
+
                     # TODO Clean Fix
                     mask_predicted = None
                     if phase == 'train':
@@ -87,10 +99,11 @@ def train_model(model,
 
                     # During the training, we backpropagate the error
                     if phase == 'train':
-                        loss = compute_loss(mask_predicted.type(torch.FloatTensor),
-                                            ground_truth.type(torch.FloatTensor),
-                                            bce_weight=0.5, metrics=metrics)
+                        #loss = compute_loss(mask_predicted.type(torch.FloatTensor),
+                        #                    ground_truth.type(torch.FloatTensor),
+                        #                    bce_weight=0.5, metrics=metrics)
                         #loss = compute_loss(mask_predicted, ground_truth, bce_weight=0.5, metrics=metrics)
+                        loss = criterion(mask_predicted, ground_truth)
                         epoch_loss += loss.item()
                         progress_bar.set_postfix(**{'loss': loss.item()})
 
@@ -100,8 +113,8 @@ def train_model(model,
                         optimizer.step()
                     # During validation we compute the metrics
                     if phase == 'val':
-                        loss = compute_loss(mask_predicted.type(torch.FloatTensor),
-                                            ground_truth.type(torch.FloatTensor),
+                        loss = compute_loss(mask_predicted,
+                                            ground_truth,
                                             bce_weight=0.5, metrics=metrics)
                         accuracy += loss / len(train_dataset)
 
@@ -147,10 +160,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 30
-    num_classes = 1
+    num_epochs = 10
+    num_classes = 2
     batch_size = 1
-    learning_rate = 0.01
+    learning_rate = 0.001
     n_images = 1
     n_channels = 6
 
@@ -163,8 +176,8 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     # batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[3:6], 0)
-    test_dataset = load_dataset(IMAGE_NUM[3:6], 0)
+    train_dataset = load_dataset(IMAGE_NUM[0:20], 0)
+    test_dataset = load_dataset(IMAGE_NUM[0:20], 0)
     # train_dataset = load_dataset(IMAGE_NUM)
     # test_dataset = load_dataset(IMAGE_NUM)
 
@@ -188,12 +201,12 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device,
-                reload=False,
+                reload=True,
                 save_model=True)
 
 
 except KeyboardInterrupt:
-    # torch.save(model.state_dict(), 'Weights/last.pth')
+    torch.save(model.state_dict(), 'Weights/last.pth')
     logging.info(f'Interrupted by Keyboard')
 finally:
     t_end = time.time()
