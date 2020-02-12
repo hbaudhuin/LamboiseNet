@@ -17,24 +17,22 @@ def applyAugmentation(images):
     # cropping
     crop_bounds = (0, 0.15)
     # shearing
-    tuple = (0.15, 10.0)
+    tuple = (0.15, 6.0)
     # scale
-    scalex_bound = (1.0, 1.5)
-    scaley_bound = (1.0, 1.5)
+    scalex_bound = (1.0, 1.3)
+    scaley_bound = (1.0, 1.3)
     # blur
     sigma = (np.random.uniform(0.2, 2.5), np.random.uniform(0.2, 2.5))
     # contrast
     gamma = (0.75, 1.1)
     # noise
-    scale_noise = (10, 50)
+    scale_noise = (10, 30)
     # hue
-    hue_range = (-70, 70)
+    hue_range = (-30, 50)
 
-    # Modifications that need to be applied on the mask too to be consiteng. E.g. if the images are rotated,so must the
-    # mask be.
     output = images
     dice = np.random.randint(0,10) / 10.0
-    if dice < 0.2 :
+    if dice < 0.3 :
         output = shear(images, tuple)
     if dice < 0.3 :
         output = rotate(output, rotate_bounds)
@@ -51,21 +49,24 @@ def applyAugmentation(images):
         output = crop(output, crop_bounds)
 
     dice = np.random.randint(0, 10) / 10.0
-    if dice > 0.5:
+    if dice > 0.9:
         output = scale(output, scalex_bound, scaley_bound)
 
     dice = np.random.randint(0, 10) / 10.0
     if dice <=0.4:
         output= gaussian_blur(output, sigma)
+
     dice = np.random.randint(0, 10) / 10.0
     if dice >0.5:
         output= contrast(output, gamma)
+
     dice = np.random.randint(0, 10) / 10.0
-    if dice > 0.4:
+    if dice > 0.8:
         output=hue_and_saturation(output, hue_range)
     dice = np.random.randint(0, 10) / 10.0
-    if dice > 0.35:
+    if dice > 0.7:
         output = gaussian_noise(output, scale_noise)
+
     return convert_back_to_uint(output)
 
 
