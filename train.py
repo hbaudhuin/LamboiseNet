@@ -3,6 +3,7 @@ from sklearn.metrics import precision_recall_fscore_support as prfs
 from torch import *
 from Models.basicUnet import BasicUnet
 from Models.modularUnet import modularUnet
+from Models.unetPlusPlus import unetPlusPlus
 import torch.utils.data
 from image import *
 import logging
@@ -176,8 +177,8 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     # batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:20], 0)
-    test_dataset = load_dataset(IMAGE_NUM[0:20], 0)
+    train_dataset = load_dataset(IMAGE_NUM[0:2], 0)
+    test_dataset = load_dataset(IMAGE_NUM[0:2], 0)
     # train_dataset = load_dataset(IMAGE_NUM)
     # test_dataset = load_dataset(IMAGE_NUM)
 
@@ -187,8 +188,9 @@ if __name__ == '__main__':
 
     # model creation
 
-    model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    # model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
     #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=4)
+    model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model.to(device)
     logging.info(f'Network creation:\n')
 
@@ -201,12 +203,12 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device,
-                reload=True,
-                save_model=True)
+                reload=False,
+                save_model=False)
 
 
 except KeyboardInterrupt:
-    torch.save(model.state_dict(), 'Weights/last.pth')
+    # torch.save(model.state_dict(), 'Weights/last.pth')
     logging.info(f'Interrupted by Keyboard')
 finally:
     t_end = time.time()
