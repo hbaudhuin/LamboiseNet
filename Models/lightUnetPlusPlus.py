@@ -12,9 +12,11 @@ class lightUnetPlusPlus(nn.Module):
 
         self.upsampling = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        filter_sizes = [64, 64 * 2, 64 * 4, 64 * 8, 64 * 16]
+        basis_filter = 32
 
-        self.layer0_0 = DoubleConvolutionLayer(n_channels, 64)
+        filter_sizes = [basis_filter, basis_filter * 2, basis_filter * 4, basis_filter* 8, basis_filter * 16]
+
+        self.layer0_0 = DoubleConvolutionLayer(n_channels, filter_sizes[0])
 
         self.layer1_0 = Downscaling_layer(filter_sizes[0], filter_sizes[1])
         self.layer2_0 = Downscaling_layer(filter_sizes[1], filter_sizes[2])

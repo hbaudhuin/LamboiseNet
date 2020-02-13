@@ -15,6 +15,7 @@ import time
 import matplotlib.pyplot as plt
 import datetime
 from loss import compute_loss, print_metrics
+import  torchsummary
 
 
 def train_model(model,
@@ -197,7 +198,7 @@ if __name__ == '__main__':
     logging.info(f'Network creation:\n')
 
     # Print the summary of the model
-    # summary(model, (6, 650, 650))
+    torchsummary.summary(model, (6, 650, 650))
 
 try:
     train_model(model=model,
