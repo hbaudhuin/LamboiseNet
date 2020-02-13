@@ -191,9 +191,9 @@ if __name__ == '__main__':
 
     # model creation
 
-    model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    # model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
     #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=4)
-    #model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
+    model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model.to(device)
     logging.info(f'Network creation:\n')
 
@@ -206,7 +206,7 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device,
-                reload=True,
+                reload=False,
                 save_model=True)
 
 
