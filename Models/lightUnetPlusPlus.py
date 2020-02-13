@@ -12,16 +12,17 @@ class lightUnetPlusPlus(nn.Module):
 
         self.upsampling = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        filter_sizes = [64, 64 * 2, 64 * 4, 64 * 8, 64 * 16]
+        basis_filter = 32
 
-        self.layer0_0 = DoubleConvolutionLayer(n_channels, 64)
+        filter_sizes = [basis_filter, basis_filter * 2, basis_filter * 4, basis_filter* 8, basis_filter * 16]
+
+        self.layer0_0 = DoubleConvolutionLayer(n_channels, filter_sizes[0])
 
         self.layer1_0 = Downscaling_layer(filter_sizes[0], filter_sizes[1])
         self.layer2_0 = Downscaling_layer(filter_sizes[1], filter_sizes[2])
         self.layer3_0 = Downscaling_layer(filter_sizes[2], filter_sizes[3])
-        self.layer4_0 = Downscaling_layer(filter_sizes[3], filter_sizes[4])
 
-        self.layer3_1 = DoubleConvolutionLayer(filter_sizes[3] + filter_sizes[4], filter_sizes[3])
+        self.layer3_1 = DoubleConvolutionLayer(filter_sizes[3], filter_sizes[3])
 
         self.layer0_2 = DoubleConvolutionLayer(filter_sizes[0] + filter_sizes[1], filter_sizes[0])
         self.layer1_2 = DoubleConvolutionLayer(filter_sizes[1] + filter_sizes[2], filter_sizes[1])
@@ -41,9 +42,8 @@ class lightUnetPlusPlus(nn.Module):
         x1_0 = self.layer1_0(x0_0)
         x2_0 = self.layer2_0(x1_0)
         x3_0 = self.layer3_0(x2_0)
-        x4_0 = self.layer4_0(x3_0)
 
-        x3_1 = self.layer3_1(self.multiple_cat([x3_0, self.upsampling(x4_0)]))
+        x3_1 = self.layer3_1(x3_0)
 
         x0_2 = self.layer0_2(self.multiple_cat([self.upsampling(x1_0),x0_0]))
         x1_2 = self.layer1_2(self.multiple_cat([self.upsampling(x2_0),x1_0]))
