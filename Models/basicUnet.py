@@ -110,6 +110,7 @@ class FinalLayer(nn.Module) :
         self.conv = nn.Sequential(DoubleConvolutionLayer(input_channels, middle_channels),
                                   nn.Conv2d(middle_channels, output_channels, kernel_size=3, padding=1),
                                   nn.BatchNorm2d(output_channels),
+                                  #nn.Sigmoid())
                                   nn.ReLU(inplace=True))
     def forward(self, x) :
         x = self.conv(x)

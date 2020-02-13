@@ -7,6 +7,7 @@ from Models.basicUnet import Downscaling_layer, ExpandingLayer, DoubleConvolutio
 class unetPlusPlus(nn.Module):
     def __init__(self, n_channels, n_classes):
         super(unetPlusPlus, self).__init__()
+        self.name = "UNet++"
 
         self.upsampling = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
@@ -32,7 +33,7 @@ class unetPlusPlus(nn.Module):
 
         self.layer0_4 = DoubleConvolutionLayer(filter_sizes[0] * 4 + filter_sizes[1], filter_sizes[0])
 
-        self.final = FinalLayer(filter_sizes[0], n_classes)
+        self.final = FinalLayer(filter_sizes[0], n_classes, n_classes)
 
     def forward(self, input):
 

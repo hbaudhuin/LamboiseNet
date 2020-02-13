@@ -3,6 +3,7 @@ from sklearn.metrics import precision_recall_fscore_support as prfs
 from torch import *
 from Models.basicUnet import BasicUnet
 from Models.modularUnet import modularUnet
+from Models.unetPlusPlus import unetPlusPlus
 import torch.utils.data
 from image import *
 import logging
@@ -50,14 +51,14 @@ def train_model(model,
     changed =5
     for epochs in range(0, num_epochs):
         logging.info(f'Epoch {epochs}')
-        if len(accuracies) > 4 :
+        if len(accuracies) > 15 :
             if np.linalg.norm(accuracies[-1:-4]) < 0.01 and changed < 1:
-                changed = 4
-                logging.info(f'Learning rate going to {learning_rate/3}')
-                learning_rate /= 3
+                changed = 15
+                logging.info(f'Learning rate going to {learning_rate/2}')
+                learning_rate /= 2
                 optimizer.lr = learning_rate
             else :
-                changed -=1
+                changed -= 1
         torch.autograd.set_detect_anomaly(True)
         accuracy = 0
         #Every epoch has a training and validation phase
@@ -102,8 +103,9 @@ def train_model(model,
                         #loss = compute_loss(mask_predicted.type(torch.FloatTensor),
                         #                    ground_truth.type(torch.FloatTensor),
                         #                    bce_weight=0.5, metrics=metrics)
-                        #loss = compute_loss(mask_predicted, ground_truth, bce_weight=0.5, metrics=metrics)
-                        loss = criterion(mask_predicted, ground_truth)
+                        bce_weight = torch.Tensor([0.1, 0.9]).to(device)
+                        loss = compute_loss(mask_predicted, ground_truth, bce_weight=bce_weight, metrics=metrics)
+                        #loss = criterion(mask_predicted, ground_truth)
                         epoch_loss += loss.item()
                         progress_bar.set_postfix(**{'loss': loss.item()})
 
@@ -115,20 +117,22 @@ def train_model(model,
                     if phase == 'val':
                         loss = compute_loss(mask_predicted,
                                             ground_truth,
-                                            bce_weight=0.5, metrics=metrics)
+                                            bce_weight=torch.Tensor([0.9, 0.1]).to(device), metrics=metrics)
                         accuracy += loss / len(train_dataset)
+                        progress_bar.set_postfix(**{'loss': loss.item()})
 
                     progress_bar.update(1)
 
             #print_metrics(metrics, len(train_dataset), phase)
             if phase == 'val':
+                logging.info(f'Eval loss {accuracy}')
                 accuracies.append(accuracy)
 
-    save_masks(last_masks, last_truths, str(device), max_img=20, shuffle=False)
+    save_masks(last_masks, last_truths, str(device), max_img=30, shuffle=False)
 
     #Test set evaluation
     metrics = dict([("tversky", 0), ("BCE", 0),("loss", 0)])
-    evaluation(model, test_dataset,device,  metrics)
+    evaluation(model, test_dataset, device,  metrics)
     print_metrics(metrics, len(test_dataset), 'test set')
 
     current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -160,10 +164,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 10
+    num_epochs = 300
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.001
+    learning_rate = 0.2
     n_images = 1
     n_channels = 6
 
@@ -176,8 +180,8 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     # batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:20], 0)
-    test_dataset = load_dataset(IMAGE_NUM[0:20], 0)
+    train_dataset = load_dataset(IMAGE_NUM[0:22], 0)
+    test_dataset = load_dataset(IMAGE_NUM[22:32], 0)
     # train_dataset = load_dataset(IMAGE_NUM)
     # test_dataset = load_dataset(IMAGE_NUM)
 
@@ -189,6 +193,7 @@ if __name__ == '__main__':
 
     model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
     #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=4)
+    #model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model.to(device)
     logging.info(f'Network creation:\n')
 

@@ -7,7 +7,7 @@ from augmentation import *
 import os
 
 
-IMAGE_NUM = list(range(1, 21))
+IMAGE_NUM = list(range(1, 33))
 
 
 def main():
@@ -52,6 +52,8 @@ def image_to_arrs(image):
 def images_prepare(img_before, img_after, img_mask):
     i_b = img_before[..., [0, 1, 2]]
     i_a = img_after[..., [0, 1, 2]]
+    i_b = normalize(i_b)
+    i_a = normalize(i_a)
     i_m = rgb_to_grey(img_mask)
     i_m_reverse = reverse_mask(i_m)
     i_join = np.zeros(shape=(6, i_b.shape[0], i_b.shape[1]))
@@ -74,7 +76,7 @@ def dataset_to_dataloader(inputs, masks):
 
 
 def normalize(image):
-    print("normalizing")
+    #print("normalizing")
 
     # R G B, with sometimes a 4th Alpha channel on PNG
     arrs = [None, None, None]
@@ -104,7 +106,13 @@ def normalize(image):
         #print(arr.shape)
         arrs[i] = arr
 
-    return arrs
+        arrs_np = np.zeros(shape=(650, 650, 3))
+        arrs_np[:, :, 0] = arrs[0]
+        arrs_np[:, :, 1] = arrs[1]
+        arrs_np[:, :, 2] = arrs[2]
+        #print(arrs_np.shape)
+
+    return arrs_np
 
 
 def save_image(arrs, location):
@@ -133,9 +141,9 @@ def load_dataset(img_nums, n_augmentation_per_image):
     inputs = np.zeros(shape=((n_augmentation_per_image+1) * len(img_nums), 6, 650, 650))
     masks  = np.zeros(shape=((n_augmentation_per_image+1) * len(img_nums), 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
-        img_b = open_image("DATA/Paris_" + str(img_num) + "/before.png")
-        img_a = open_image("DATA/Paris_" + str(img_num) + "/after.png")
-        img_m = open_image("DATA/Paris_" + str(img_num) + "/mask.png")
+        img_b = open_image("DATA/Earth_" + str(img_num) + "/before.png")
+        img_a = open_image("DATA/Earth_" + str(img_num) + "/after.png")
+        img_m = open_image("DATA/Earth_" + str(img_num) + "/mask.png")
 
         input, mask = images_prepare(img_b, img_a, img_m)
         augmentedData = data_augmentation(img_a, img_b, img_m, n_augmentation_per_image)
@@ -167,7 +175,7 @@ def data_augmentation(before, after, mask, n_augmentation):
     return augmentedData
 
 
-def save_masks(masks_predicted, ground_truths, device,  max_img = 10, shuffle = True):
+def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False, color="blue", filename="mask_predicted.png"):
     #TODO clean the code
     max_img = min(max_img, len(masks_predicted))
     import math
@@ -186,40 +194,45 @@ def save_masks(masks_predicted, ground_truths, device,  max_img = 10, shuffle = 
         mp = masks_predicted[n]
         gt = ground_truths[n]
 
-        print("MP SH", mp.shape)
-        print("GT SH", gt.shape)
+        #print("MP SH", mp.shape)
+        #print("GT SH", gt.shape)
 
         arrs = np.zeros(shape=(2, 650, 650))
         gt_arrs = np.zeros(shape=(650, 650))
         if device == 'cuda' :
             arrs[...] = mp.cpu().detach().numpy()[0, ...]
-            print("mp_sh", mp.cpu().detach().numpy()[0, ...].shape)
+            #print("mp_sh", mp.cpu().detach().numpy()[0, ...].shape)
             gt_arrs[...] = gt.cpu().detach().numpy()[0, ...]
-            print("gt_sh", gt.cpu().detach().numpy()[0, ...].shape)
+            #print("gt_sh", gt.cpu().detach().numpy()[0, ...].shape)
         else :
             arrs[...] = mp.detach().numpy()[0, ...]
             gt_arrs[...] = gt.detach().numpy()[0, ...]
 
-        print("ARRS TYPE", type(arrs))
-        print("MASK MIN", np.min(arrs))
-        print("MASK MAX", np.max(arrs))
-        print("MASK AVG", np.mean(arrs))
+        #print("ARRS TYPE", type(arrs))
+        #print("MASK MIN", np.min(arrs))
+        #print("MASK MAX", np.max(arrs))
+        #print("MASK AVG", np.mean(arrs))
+
         #arrs = mask_to_image(arrs)
         arrs = arrs[0, :, :]
         arrs = 1 - arrs
-        print("ARRS TYPE", type(arrs))
-        print("MASK MIN", np.min(arrs))
-        print("MASK MAX", np.max(arrs))
-        print("MASK AVG", np.mean(arrs))
+
+        #print("ARRS TYPE", type(arrs))
+        #print("MASK MIN", np.min(arrs))
+        #print("MASK MAX", np.max(arrs))
+        #print("MASK AVG", np.mean(arrs))
 
         rgbArray = np.ones((650, 650, 3), 'uint8')
-        rgbArray[..., 0] = arrs
+        if color != "red":
+            rgbArray[..., 0] = arrs
         rgbArray[..., 1] = arrs
+        if color != "blue":
+            rgbArray[..., 2] = arrs
 
-        print("RGBARR TYPE", type(rgbArray))
-        print("MASK MIN", np.min(rgbArray))
-        print("MASK MAX", np.max(rgbArray))
-        print("MASK AVG", np.mean(rgbArray))
+        #print("RGBARR TYPE", type(rgbArray))
+        #print("MASK MIN", np.min(rgbArray))
+        #print("MASK MAX", np.max(rgbArray))
+        #print("MASK AVG", np.mean(rgbArray))
 
         rgbArray *= 255
 
@@ -232,22 +245,22 @@ def save_masks(masks_predicted, ground_truths, device,  max_img = 10, shuffle = 
 
         gt_rgbArray *= 255
 
-        print("GTRGBARR TYPE", type(gt_rgbArray))
-        print("MASK MIN", np.min(gt_rgbArray))
-        print("MASK MAX", np.max(gt_rgbArray))
-        print("MASK AVG", np.mean(gt_rgbArray))
+        #print("GTRGBARR TYPE", type(gt_rgbArray))
+        #print("MASK MIN", np.min(gt_rgbArray))
+        #print("MASK MAX", np.max(gt_rgbArray))
+        #print("MASK AVG", np.mean(gt_rgbArray))
 
         out[650*ir:650*(ir+1), (2*650*ic):(2*650*ic+650), 0:3] = rgbArray
         out[650*ir:650*(ir+1), (2*650*ic+650):(2*650*(ic+1)), 0:3] = gt_rgbArray
 
     img = Image.fromarray(out)
     img = img.convert("RGB")
-    img.save("mask_predicted.png")
+    img.save(filename)
 
 
 
 
-def save_mask_predicted(mask_predicted, ground_truth, device):
+def save_mask_predicted(mask_predicted, ground_truth, device, color="blue", filename="mask_predicted.png"):
 
     arrs = np.zeros(shape=(650, 650))
     gt_arrs = np.zeros(shape=(650, 650))
@@ -269,8 +282,11 @@ def save_mask_predicted(mask_predicted, ground_truth, device):
     arrs = 1 - arrs
 
     rgbArray = np.ones((650, 650, 3), 'uint8')
-    rgbArray[..., 0] = arrs
+    if color != "red":
+        rgbArray[..., 0] = arrs
     rgbArray[..., 1] = arrs
+    if color != "blue":
+        rgbArray[..., 2] = arrs
 
     rgbArray *= 255
 
@@ -289,7 +305,7 @@ def save_mask_predicted(mask_predicted, ground_truth, device):
 
     img = Image.fromarray(fusion)
     img = img.convert("RGB")
-    img.save("mask_predicted.png")
+    img.save(filename)
 
 
 def process_patch(patch_number):
