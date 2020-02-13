@@ -4,6 +4,7 @@ from torch import *
 from Models.basicUnet import BasicUnet
 from Models.modularUnet import modularUnet
 from Models.unetPlusPlus import unetPlusPlus
+from Models.lightUnetPlusPlus import lightUnetPlusPlus
 import torch.utils.data
 from image import *
 import logging
@@ -193,7 +194,8 @@ if __name__ == '__main__':
 
     # model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
     #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=4)
-    model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
+    #model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
+    model = lightUnetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model.to(device)
     logging.info(f'Network creation:\n')
 
