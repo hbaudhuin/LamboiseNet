@@ -36,7 +36,7 @@ def evaluation(model, dataset, device, metrics):
 
             progress_bar.update()
 
-    save_masks(last_masks, last_truths, str(device), max_img=30, shuffle=False, color="red", filename="mask_predicted_test.png")
+    save_masks(last_masks, last_truths, str(device), max_img=50, shuffle=False, color="red", filename="mask_predicted_test.png")
 
     loss /= len(dataset)
 

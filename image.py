@@ -138,8 +138,13 @@ def rgb_to_grey(mask):
 
 def load_dataset(img_nums, n_augmentation_per_image):
 
-    inputs = np.zeros(shape=((n_augmentation_per_image+1) * len(img_nums), 6, 650, 650))
-    masks  = np.zeros(shape=((n_augmentation_per_image+1) * len(img_nums), 650, 650), dtype=np.long)
+    no_augment = False
+    if n_augmentation_per_image == 0:
+        no_augment = True
+        n_augmentation_per_image = 1
+
+    inputs = np.zeros(shape=((n_augmentation_per_image) * len(img_nums), 6, 650, 650))
+    masks  = np.zeros(shape=((n_augmentation_per_image) * len(img_nums), 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
         img_b = open_image("DATA/Earth_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Earth_" + str(img_num) + "/after.png")
@@ -148,11 +153,13 @@ def load_dataset(img_nums, n_augmentation_per_image):
         input, mask = images_prepare(img_b, img_a, img_m)
         augmentedData = data_augmentation(img_a, img_b, img_m, n_augmentation_per_image)
 
-        for l in range(0,len(augmentedData)):
-            inputs[i+l] = augmentedData[l][0]
-            masks[i+l] = augmentedData[l][1]
-        inputs[i] = input
-        masks[i] = mask
+        j = i * (n_augmentation_per_image)
+        if not no_augment:
+            for l in range(0,len(augmentedData)):
+                inputs[j+l] = augmentedData[l][0]
+                masks[j+l] = augmentedData[l][1]
+        inputs[j] = input
+        masks[j] = mask
         #print("inputs", type(inputs), inputs.shape)
         #print("masks ", type(masks), masks.shape)
     return dataset_to_dataloader(inputs, masks)
@@ -170,7 +177,7 @@ def data_augmentation(before, after, mask, n_augmentation):
 
     for i in range(n_augmentation) :
         [im_a,im_b,mask_c] = applyAugmentation(input)
-        augmentedData.append(images_prepare(im_b,im_a, mask_c))
+        augmentedData.append(images_prepare(im_b, im_a, mask_c))
 
     return augmentedData
 

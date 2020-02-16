@@ -23,6 +23,8 @@ def train_model(model,
                 batch_size,
                 learning_rate,
                 device,
+                train_dataset,
+                test_dataset,
                 reload,
                 save_model):
     logging.info(f'''Starting training : 
@@ -52,10 +54,12 @@ def train_model(model,
                 accuracies.append(acc)
     changed =5
     for epochs in range(0, num_epochs):
+        # new dataset with random augmentation at each epoch
+        train_dataset = load_dataset(IMAGE_NUM[0:22], 2)
         logging.info(f'Epoch {epochs}')
-        if len(accuracies) > 15 :
+        if len(accuracies) > 10 :
             if np.linalg.norm(accuracies[-1:-4]) < 0.01 and changed < 1:
-                changed = 15
+                changed = 10
                 logging.info(f'Learning rate going to {learning_rate/2}')
                 learning_rate /= 2
                 optimizer.lr = learning_rate
@@ -130,7 +134,7 @@ def train_model(model,
                 logging.info(f'Eval loss {accuracy}')
                 accuracies.append(accuracy)
 
-    save_masks(last_masks, last_truths, str(device), max_img=30, shuffle=False)
+    save_masks(last_masks, last_truths, str(device), max_img=50, shuffle=False)
 
     #Test set evaluation
     metrics = dict([("tversky", 0), ("BCE", 0),("loss", 0)])
@@ -166,10 +170,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 300
+    num_epochs = 20
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.2
+    learning_rate = 0.0001
     n_images = 1
     n_channels = 6
 
@@ -182,7 +186,7 @@ if __name__ == '__main__':
 
     # transform into pytorch vector and normalise
     # batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:22], 0)
+    train_dataset = load_dataset(IMAGE_NUM[0:22], 2)
     test_dataset = load_dataset(IMAGE_NUM[22:32], 0)
     # train_dataset = load_dataset(IMAGE_NUM)
     # test_dataset = load_dataset(IMAGE_NUM)
@@ -193,7 +197,7 @@ if __name__ == '__main__':
 
     # model creation
 
-    # model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    #model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
     #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=4)
     #model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model = lightUnetPlusPlus(n_channels=n_channels, n_classes=num_classes)
@@ -209,7 +213,9 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device,
-                reload=False,
+                train_dataset=train_dataset,
+                test_dataset=test_dataset,
+                reload=True,
                 save_model=True)
 
 

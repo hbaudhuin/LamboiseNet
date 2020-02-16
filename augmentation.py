@@ -31,41 +31,53 @@ def applyAugmentation(images):
     hue_range = (-30, 50)
 
     output = images
+
+    '''
+    # shear and rotate
     dice = np.random.randint(0,10) / 10.0
     if dice < 0.3 :
         output = shear(images, tuple)
     if dice < 0.3 :
         output = rotate(output, rotate_bounds)
+    '''
 
-    for i in range(0,5):
-        dice = np.random.randint(0, 10) / 10.0
-        if dice < 0.4:
-            output = horizontal_flip(output)
-        if dice > 0.7:
-            output = vertical_flip(output)
+    # flip
+    dice = np.random.randint(0, 10) / 10.0
+    if dice < 0.5:
+        output = horizontal_flip(output)
+    dice = np.random.randint(0, 10) / 10.0
+    if dice < 0.5:
+        output = vertical_flip(output)
 
+    '''
+    # crop
     dice = np.random.randint(0, 10) / 10.0
     if dice < 0.3:
         output = crop(output, crop_bounds)
 
+    # scale
     dice = np.random.randint(0, 10) / 10.0
     if dice > 0.9:
         output = scale(output, scalex_bound, scaley_bound)
 
+    # blur
     dice = np.random.randint(0, 10) / 10.0
     if dice <=0.4:
-        output= gaussian_blur(output, sigma)
+        output = gaussian_blur(output, sigma)
 
+    # contrast
     dice = np.random.randint(0, 10) / 10.0
     if dice >0.5:
-        output= contrast(output, gamma)
+        output = contrast(output, gamma)
 
+    # hue and saturation
     dice = np.random.randint(0, 10) / 10.0
     if dice > 0.8:
-        output=hue_and_saturation(output, hue_range)
+        output = hue_and_saturation(output, hue_range)
     dice = np.random.randint(0, 10) / 10.0
     if dice > 0.7:
         output = gaussian_noise(output, scale_noise)
+    '''
 
     return convert_back_to_uint(output)
 
@@ -81,8 +93,7 @@ def vertical_flip(image):
 
         for index2 in [0, 1, 2]:
             array = img[:, :, index2]
-            flipped[index, :, :, index2] = np.fliplr(array)
-
+            flipped[index, :, :, index2] = np.flip(array, 0)
     return convert_back_to_uint(flipped)
 
 

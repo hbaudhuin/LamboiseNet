@@ -11,7 +11,8 @@ class unetPlusPlus(nn.Module):
 
         self.upsampling = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        filter_sizes = [64, 64 * 2, 64 * 4, 64 * 8, 64 * 16]
+        #filter_sizes = [64, 64 * 2, 64 * 4, 64 * 8, 64 * 16]
+        filter_sizes = [64, 8, 8, 8, 8]
 
         self.layer0_0 = DoubleConvolutionLayer(n_channels, 64)
 
@@ -53,7 +54,6 @@ class unetPlusPlus(nn.Module):
         x0_2 = self.layer0_2(self.multiple_cat([x0_1, x0_0, self.upsampling(x1_1)]))
         x1_2 = self.layer1_2(self.multiple_cat([self.upsampling(x2_1),x1_0, x1_1]))
         x2_2 = self.layer2_2(self.multiple_cat([self.upsampling(x3_1), x2_1, x2_0]))
-
 
         x0_3 = self.layer0_3(self.multiple_cat([x0_0, x0_1, x0_2, self.upsampling(x1_2)]))
         x1_3 = self.layer1_3(self.multiple_cat([self.upsampling(x2_2), x1_0, x1_1, x1_2]))
