@@ -66,6 +66,7 @@ def images_prepare(img_before, img_after, img_mask):
 
 
 def dataset_to_dataloader(inputs, masks):
+
     tensor_x = torch.stack([torch.Tensor(i) for i in inputs])
     tensor_y = torch.stack([torch.tensor(i, dtype=torch.long) for i in masks])
 
@@ -136,7 +137,7 @@ def rgb_to_grey(mask):
     return grey
 
 
-def load_dataset(img_nums, n_augmentation_per_image):
+def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
 
     no_augment = False
     if n_augmentation_per_image == 0:
@@ -146,13 +147,17 @@ def load_dataset(img_nums, n_augmentation_per_image):
     inputs = np.zeros(shape=((n_augmentation_per_image) * len(img_nums), 6, 650, 650))
     masks  = np.zeros(shape=((n_augmentation_per_image) * len(img_nums), 650, 650), dtype=np.long)
     for i, img_num in enumerate(img_nums):
+        #print("Loading image "+str(i))
         img_b = open_image("DATA/Earth_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Earth_" + str(img_num) + "/after.png")
         img_m = open_image("DATA/Earth_" + str(img_num) + "/mask.png")
 
+        #print("prepare")
         input, mask = images_prepare(img_b, img_a, img_m)
+        #print("augment")
         augmentedData = data_augmentation(img_a, img_b, img_m, n_augmentation_per_image)
 
+        #print("store")
         j = i * (n_augmentation_per_image)
         if not no_augment:
             for l in range(0,len(augmentedData)):
@@ -162,6 +167,10 @@ def load_dataset(img_nums, n_augmentation_per_image):
         masks[j] = mask
         #print("inputs", type(inputs), inputs.shape)
         #print("masks ", type(masks), masks.shape)
+
+    #print("fold")
+    inputs, masks = fold_batch(inputs, masks, batch_size)
+
     return dataset_to_dataloader(inputs, masks)
 
 
@@ -183,6 +192,10 @@ def data_augmentation(before, after, mask, n_augmentation):
 
 
 def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False, color="blue", filename="mask_predicted.png"):
+
+    masks_predicted = unfold_batch(masks_predicted)
+    ground_truths = unfold_batch(ground_truths)
+
     #TODO clean the code
     max_img = min(max_img, len(masks_predicted))
     import math
@@ -207,10 +220,10 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
         arrs = np.zeros(shape=(2, 650, 650))
         gt_arrs = np.zeros(shape=(650, 650))
         if device == 'cuda' :
-            arrs[...] = mp.cpu().detach().numpy()[0, ...]
-            #print("mp_sh", mp.cpu().detach().numpy()[0, ...].shape)
-            gt_arrs[...] = gt.cpu().detach().numpy()[0, ...]
-            #print("gt_sh", gt.cpu().detach().numpy()[0, ...].shape)
+            arrs[...] = mp.cpu().detach().numpy()[...]
+            #print("mp_sh", mp.cpu().detach().numpy()[...].shape)
+            gt_arrs[...] = gt.cpu().detach().numpy()[...]
+            #print("gt_sh", gt.cpu().detach().numpy()[...].shape)
         else :
             arrs[...] = mp.detach().numpy()[0, ...]
             gt_arrs[...] = gt.detach().numpy()[0, ...]
@@ -373,7 +386,41 @@ def reverse_mask(mask) :
     return reversed_mask
 
 
+def fold_batch(inputs, masks, batch_size):
 
+    new_inputs = []
+    new_masks = []
+
+    remaining = len(inputs)
+    next_pick = min(remaining, batch_size)
+    idx = 0
+
+    while remaining > 0:
+        batch_inputs = np.stack(inputs[idx:idx+next_pick], axis=0)
+        batch_masks = np.stack(masks[idx:idx+next_pick], axis=0)
+
+        #print("bis", batch_inputs.shape)
+        #print("bms", batch_masks.shape)
+
+        new_inputs.append(batch_inputs)
+        new_masks.append(batch_masks)
+
+        idx += next_pick
+        remaining -= next_pick
+        next_pick = min(remaining, batch_size)
+
+    return new_inputs, new_masks
+
+
+def unfold_batch(batch_list):
+
+    ret = []
+    for batch in batch_list:
+        #print(batch.shape)
+        for i in range(batch.shape[0]):
+            ret.append(batch[i, ...])
+
+    return ret
 
 
 

@@ -49,7 +49,6 @@ class lightUnetPlusPlus(nn.Module):
         x1_2 = self.layer1_2(self.multiple_cat([self.upsampling(x2_0),x1_0]))
         x2_2 = self.layer2_2(self.multiple_cat([self.upsampling(x3_1),x2_0]))
 
-
         x0_3 = self.layer0_3(self.multiple_cat([x0_0, x0_2, self.upsampling(x1_2)]))
         x1_3 = self.layer1_3(self.multiple_cat([self.upsampling(x2_2), x1_0, x1_2]))
 

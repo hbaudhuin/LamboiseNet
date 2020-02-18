@@ -15,7 +15,7 @@ import time
 import matplotlib.pyplot as plt
 import datetime
 from loss import compute_loss, print_metrics
-import  torchsummary
+import torchsummary
 
 
 def train_model(model,
@@ -52,10 +52,11 @@ def train_model(model,
             prev_acc = np.loadtxt('Loss/last.pth')
             for acc in prev_acc:
                 accuracies.append(acc)
-    changed =5
+
+    changed = 5
     for epochs in range(0, num_epochs):
         # new dataset with random augmentation at each epoch
-        train_dataset = load_dataset(IMAGE_NUM[0:22], 2)
+        train_dataset = load_dataset(IMAGE_NUM[0:22], 2, batch_size=batch_size)
         logging.info(f'Epoch {epochs}')
         if len(accuracies) > 10 :
             if np.linalg.norm(accuracies[-1:-4]) < 0.01 and changed < 1:
@@ -79,6 +80,10 @@ def train_model(model,
 
             with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
                 for i, (images, ground_truth) in enumerate(train_dataset):
+
+                    images = images[0, ...]
+                    ground_truth = ground_truth[0, ...]
+
                     images = images.to(device)
                     last_truths[i] = ground_truth
                     ground_truth = ground_truth.to(device)
@@ -170,10 +175,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 20
+    num_epochs = 1
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.0001
+    learning_rate = 0.001
     n_images = 1
     n_channels = 6
 
@@ -183,15 +188,17 @@ if __name__ == '__main__':
     logging.info(f'Using {device}')
 
     # dataset setup
+    logging.info(f'Generating dataset ...')
+    logging.info(f'Batch size: {batch_size}')
 
     # transform into pytorch vector and normalise
     # batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:22], 2)
+    train_dataset = load_dataset(IMAGE_NUM[0:22], 2, batch_size)
     test_dataset = load_dataset(IMAGE_NUM[22:32], 0)
     # train_dataset = load_dataset(IMAGE_NUM)
     # test_dataset = load_dataset(IMAGE_NUM)
 
-    logging.info(f'Batch size: {batch_size}')
+    logging.info(f'Dataset generated')
 
     # TODO add check of arguments
 

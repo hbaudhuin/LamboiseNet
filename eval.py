@@ -17,6 +17,9 @@ def evaluation(model, dataset, device, metrics):
     with tqdm(desc=f'Validation', unit='img') as progress_bar:
         for i, (image, ground_truth) in enumerate(dataset):
 
+            image = image[0, ...]
+            ground_truth = ground_truth[0, ...]
+
             last_truths[i] = ground_truth
 
             image = image.to(device)
