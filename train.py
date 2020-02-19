@@ -45,99 +45,99 @@ def train_model(model,
     last_masks = [None] * len(train_dataset)
     last_truths = [None] * len(train_dataset)
 
-    accuracies = []
+    losses_train = []
+    losses_test = []
 
     if reload:
-        with open('Loss/last.pth', 'r') as acc_file:
-            prev_acc = np.loadtxt('Loss/last.pth')
-            for acc in prev_acc:
-                accuracies.append(acc)
+        try:
+            prev_loss = np.loadtxt('Loss/last.pth')
+            losses_train = list(prev_loss[:, 0])
+            losses_test = list(prev_loss[:, 1])
+        except:
+            print("Failed to load previous loss values")
 
     changed = 5
     for epochs in range(0, num_epochs):
+
         # new dataset with random augmentation at each epoch
         train_dataset = load_dataset(IMAGE_NUM[0:22], 2, batch_size=batch_size)
+
         logging.info(f'Epoch {epochs}')
-        if len(accuracies) > 10 :
-            if np.linalg.norm(accuracies[-1:-4]) < 0.01 and changed < 1:
+        if len(losses_train) > 10 :
+            if np.linalg.norm(losses_train[-1:-4]) < 0.01 and changed < 1:
                 changed = 10
                 logging.info(f'Learning rate going to {learning_rate/2}')
                 learning_rate /= 2
                 optimizer.lr = learning_rate
-            else :
+            else:
                 changed -= 1
         torch.autograd.set_detect_anomaly(True)
-        accuracy = 0
+
+        loss_train = 0
+        loss_test = 0
+
         #Every epoch has a training and validation phase
-        for phase in ['train', 'val']:
-            if phase == 'train':
-                model.train()
-            else:
-                model.eval()
 
-            epoch_loss = 0
-            metrics = dict([("tversky", 0),  ("BCE", 0), ("loss", 0)])
+        epoch_loss = 0
+        metrics = dict([("tversky", 0),  ("BCE", 0), ("loss", 0)])
 
-            with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
-                for i, (images, ground_truth) in enumerate(train_dataset):
+        # TRAIN
+        with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
+            model.train()
+            for i, (images, ground_truth) in enumerate(train_dataset):
 
-                    images = images[0, ...]
-                    ground_truth = ground_truth[0, ...]
+                images = images[0, ...]
+                ground_truth = ground_truth[0, ...]
 
-                    images = images.to(device)
-                    last_truths[i] = ground_truth
-                    ground_truth = ground_truth.to(device)
+                images = images.to(device)
+                last_truths[i] = ground_truth
+                ground_truth = ground_truth.to(device)
 
-                    '''
-                    gt = ground_truth.cpu().detach().numpy()
-                    print("")
-                    print("GT SHP", gt.shape)
-                    print("GT MIN", np.min(gt))
-                    print("GT MAX", np.max(gt))
-                    print("GT AVG", np.mean(gt))
-                    plt.imshow(gt[0,:,:])
-                    plt.show()
-                    '''
+                mask_predicted = model(images)
 
-                    # TODO Clean Fix
-                    mask_predicted = None
-                    if phase == 'train':
-                        mask_predicted = model(images)
-                    else:
-                        with torch.no_grad():
-                            mask_predicted = model(images)
-                    last_masks[i] = mask_predicted
+                last_masks[i] = mask_predicted
 
+                bce_weight = torch.Tensor([0.1, 0.9]).to(device)
+                loss = compute_loss(mask_predicted, ground_truth, bce_weight=bce_weight, metrics=metrics)
 
-                    # During the training, we backpropagate the error
-                    if phase == 'train':
-                        #loss = compute_loss(mask_predicted.type(torch.FloatTensor),
-                        #                    ground_truth.type(torch.FloatTensor),
-                        #                    bce_weight=0.5, metrics=metrics)
-                        bce_weight = torch.Tensor([0.1, 0.9]).to(device)
-                        loss = compute_loss(mask_predicted, ground_truth, bce_weight=bce_weight, metrics=metrics)
-                        #loss = criterion(mask_predicted, ground_truth)
-                        epoch_loss += loss.item()
-                        progress_bar.set_postfix(**{'loss': loss.item()})
+                loss_train += loss.item() / len(train_dataset)
+                progress_bar.set_postfix(**{'loss': loss.item()})
 
-                        # zero the gradient and back propagate
-                        optimizer.zero_grad()
-                        loss.backward()
-                        optimizer.step()
-                    # During validation we compute the metrics
-                    if phase == 'val':
-                        loss = compute_loss(mask_predicted,
-                                            ground_truth,
-                                            bce_weight=torch.Tensor([0.9, 0.1]).to(device), metrics=metrics)
-                        accuracy += loss / len(train_dataset)
-                        progress_bar.set_postfix(**{'loss': loss.item()})
+                # zero the gradient and back propagate
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-                    progress_bar.update(1)
+                progress_bar.update(1)
 
-            #print_metrics(metrics, len(train_dataset), phase)
-            if phase == 'val':
-                logging.info(f'Eval loss {accuracy}')
-                accuracies.append(accuracy)
+        # TEST
+        with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
+            model.eval()
+            for i, (images, ground_truth) in enumerate(test_dataset):
+
+                images = images[0, ...]
+                ground_truth = ground_truth[0, ...]
+
+                images = images.to(device)
+                last_truths[i] = ground_truth
+                ground_truth = ground_truth.to(device)
+
+                with torch.no_grad():
+                    mask_predicted = model(images)
+
+                loss = compute_loss(mask_predicted,
+                                    ground_truth,
+                                    bce_weight=torch.Tensor([0.9, 0.1]).to(device), metrics=metrics)
+                loss_test += loss / len(test_dataset)
+                progress_bar.set_postfix(**{'loss': loss.item()})
+
+                progress_bar.update(1)
+
+        #print_metrics(metrics, len(train_dataset), phase)
+        logging.info(f'Train loss {loss_train}')
+        logging.info(f'Test loss  {loss_test}')
+        losses_train.append(loss_train)
+        losses_test.append(loss_test)
 
     save_masks(last_masks, last_truths, str(device), max_img=50, shuffle=False)
 
@@ -146,6 +146,7 @@ def train_model(model,
     evaluation(model, test_dataset, device,  metrics)
     print_metrics(metrics, len(test_dataset), 'test set')
 
+    # save model weights
     current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     if save_model:
         placeholder_file('Weights/last.pth')
@@ -155,17 +156,23 @@ def train_model(model,
         torch.save(model.state_dict(), 'Weights/' + current_datetime + '.pth')
         logging.info(f'Model saved')
 
+    # save the losses
+    loss_to_save = np.stack([np.asarray(losses_train), np.asarray(losses_test)], axis=1)
     placeholder_file(
         'Loss/' + 'learning_' + str(learning_rate) + '_epoch_' + str(num_epochs) + '_time_' + current_datetime + '.pth')
     np.savetxt(
         'Loss/' + 'learning_' + str(learning_rate) + '_epoch_' + str(num_epochs) + '_time_' + current_datetime + '.pth',
-        accuracies)
+        loss_to_save)
     placeholder_file('Loss/last.pth')
-    np.savetxt('Loss/last.pth', accuracies)
+    np.savetxt('Loss/last.pth', loss_to_save)
 
-    plt.plot([i for i in range(0, len(accuracies))], accuracies)
+    # plot train and test losses
+    plt.plot([i for i in range(0, len(losses_train))], losses_train, label='Train Loss')
+    plt.plot([i for i in range(0, len(losses_test))], losses_test, label='Test Loss')
+    plt.legend()
+    plt.ylim(bottom=0)
     plt.xlabel("Epochs")
-    plt.ylabel("Cross-Entropy with BCE loss")
+    plt.ylabel("Loss")
     plt.savefig("Loss.png")
     plt.show()
     plt.close("Loss.png")
@@ -175,10 +182,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 1
+    num_epochs = 20
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.001
+    learning_rate = 0.05
     n_images = 1
     n_channels = 6
 
