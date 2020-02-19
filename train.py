@@ -182,7 +182,7 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 20
+    num_epochs = 5
     num_classes = 2
     batch_size = 1
     learning_rate = 0.05
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     logging.info(f'Network creation:\n')
 
     # Print the summary of the model
-    torchsummary.summary(model, (6, 650, 650))
+    #torchsummary.summary(model, (6, 650, 650))
 
 try:
     train_model(model=model,

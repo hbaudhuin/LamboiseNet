@@ -12,7 +12,7 @@ class lightUnetPlusPlus(nn.Module):
 
         self.upsampling = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        basis_filter = 64
+        basis_filter = 32
 
         filter_sizes = [basis_filter, basis_filter * 2, basis_filter * 4, basis_filter* 8, basis_filter * 16]
 
