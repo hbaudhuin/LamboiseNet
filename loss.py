@@ -2,89 +2,109 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 import torch.nn as nn
-
+import sklearn.metrics as skmetrics
+import matplotlib.pyplot as plt
 
 # TODO add other loss compution jaccard
 
 
 def compute_loss(prediction, target, bce_weight, metrics):
-    # prediction[prediction > 1.0] = 1.0
-
-    # prediction = torch.from_numpy(prediction)
-    # target = torch.from_numpy(target)
-
-    #print("pred", prediction.shape)
-    #print("targ", target.shape)
-
-    #print(prediction_.shape)
-    #print(type(prediction_))
-
-    #print(target)
-
-    #pred_min = np.min(prediction.cpu().detach().numpy())
-    #pred_max = np.max(prediction.cpu().detach().numpy())
-    #pred_avg = np.average(prediction.cpu().detach().numpy())
-
-    #print("pred", pred_min, pred_max, pred_avg)
-
-    #targ_min = np.min(target.cpu().detach().numpy())
-    #targ_max = np.max(target.cpu().detach().numpy())
-    #targ_avg = np.average(target.cpu().detach().numpy())
-
-    #print("targ", targ_min, targ_max, targ_avg)
 
 
-    #bce = F.binary_cross_entropy_with_logits(prediction, target)
-    #bce = torch.mean(torch.abs((1.0*target) - prediction))
-
-    #tvesrky = tversky_loss(prediction, target, 0.5)
-
-    #criterion = nn.CrossEntropyLoss()
-    #ce = criterion(prediction_, prediction_)
-
-    #loss = bce #* bce_weight # + tvesrky * (1 - bce_weight)
-    #loss = ce
 
     criterion = nn.CrossEntropyLoss(weight=bce_weight)
-    #criterion = nn.CrossEntropyLoss()
     loss = criterion(prediction, target)
 
     #criterion = nn.BCELoss()
     #loss = criterion(prediction[:, 0, :, :], target)
 
 
-    metrics["BCE"] += 0 #bce
     metrics["loss"] += loss
-    metrics["tversky"] += 0 #tvesrky
+
 
     return loss
 
 def print_metrics(metrics, samples , phase):
     outputs = []
     for k in metrics.keys():
-        outputs.append("{}: {:4f}".format(k, metrics[k] / samples))
+        if type(metrics[k]) is not 'str' :
+            print(str(k)+" "+str(metrics[k]))
+        else :
+            outputs.append("{}: {:4f}".format(k, metrics[k] / samples))
 
     print("{}: {}".format(phase, ", ".join(outputs)))
 
+def get_metrics(predicted, target, metrics_dict):
 
-# TODO variate epsilon
-"""SOFT dice loss"""
-"""def dice_loss( predicted, truth, epsilon):
-    #predicted = torch.sigmoid(predicted)
-    """
-"""try:
-        predicted = predicted.detach().numpy()
-        truth = truth.detach().numpy()
-    except TypeError:
-        # Fix when we're running on CUDA
-        predicted = predicted.cpu().detach().numpy()
-        truth = truth.cpu().detach().numpy()
-    """"""
-    numerator = 2. * np.sum(predicted * truth)
+    predicted_copy = np.copy(predicted)
 
-    denominator = np.sum(predicted + truth)
+    for index, threshold in enumerate([ 0.1,0.2, 0.3,0.5, 0.7,0.9]):
+        predicted_thresholded = predicted
+        predicted_thresholded[predicted_copy >= threshold] = 1
+        predicted_thresholded[predicted_copy < threshold] = 0
+        #print("THRESHOLD CHANGE " +str(threshold))
+        true_positive = 0
+        true_negative = 0
+        false_positive = 0
+        false_negative = 0
+        for i in range(len(predicted_thresholded)) :
 
-    return 1 -( numerator +epsilon) / (denominator +epsilon)"""
+
+            for j in range(len(predicted_thresholded[0])) :
+                if predicted_thresholded[i, j] != target[i, j] :
+                    if predicted_thresholded[i, j] == 0 :
+
+                        false_negative += 1
+                    else:
+
+                        false_positive += 1
+                elif predicted_thresholded[i, j] == 0 :
+
+                    true_negative +=1
+                else :
+
+                    true_positive +=1
+
+
+        if true_positive == 0 and false_negative == 0:
+            recall= 1
+        else:
+            recall = true_positive / (true_positive + false_negative)
+
+        if true_positive ==0 and false_positive == 0 :
+            precision =1
+        else :
+            precision = true_positive / (true_positive+false_positive) #tpr
+
+        if true_positive == 0 and false_negative == 0 :
+            tpr = 1
+        else :
+            tpr = true_positive / (true_positive + false_negative)
+
+        if true_negative == 0 and false_positive == 0 :
+            specificity = 1
+        else :
+            specificity = true_negative / (true_negative + false_positive)
+
+        if recall * precision == 0 :
+            f1 = 0
+        else :
+            f1 = 2*recall*precision/(recall+precision)
+
+
+        fpr = 1 - specificity#false_positive / (true_negative + false_positive)
+
+        metrics_dict["F1"][index] += f1
+        metrics_dict["Recall"][index] += recall
+        metrics_dict["Precision"][index] += precision
+        metrics_dict["TP"][index] += true_positive
+        metrics_dict["TN"][index] += true_negative
+        metrics_dict["FP"][index] += false_positive
+        metrics_dict["FN"][index] += false_negative
+        metrics_dict["TPR"][index] += tpr
+        metrics_dict["FPR"][index] += fpr
+
+    metrics_dict["AUC"] += (sum(metrics_dict["TPR"]) - sum(metrics_dict["FPR"]) +1) /2
 
 
 def dice(prediction, target):
@@ -118,26 +138,24 @@ def tversky_loss(y_true, y_pred, beta):
 
 def dice_loss(prediction, target):
     smooth = 1.
+    beta = 0.5
 
-    prediction = prediction.clone().detach()
-    target = target.clone().detach()
-
-    prediction = prediction.contiguous()
-    target = target.contiguous()
-    """try:
-        pred = pred.detach().numpy()
+    try:
+        prediction = prediction.detach().numpy()
         target = target.detach().numpy()
     except TypeError:
         # Fix when we're running on CUDA
-        pred = pred.cpu().detach().numpy()
+        prediction = prediction.cpu().detach().numpy()
         target = target.cpu().detach().numpy()
 
-    """
-    intersection = (prediction * target).sum(dim=2).sum(dim=2)
+    prediction= prediction[0]
+    prediction[prediction > 0.5] = 1.0
+    prediction[prediction <= 0.5] = 0.0
+    numerator = np.sum(target * prediction)
 
-    loss = (1 - ((2. * intersection + smooth) / (prediction.sum(dim=2).sum(dim=2) + target.sum(dim=2).sum(dim=2) + smooth)))
-    print(loss.mean())
-    return loss.mean()
+    denominator = target * prediction + beta * (1 - target) * prediction + (1 - beta) * target * (1 - prediction)
+
+    return 1 - (numerator + 1.) / (np.sum(denominator) + 1.)
 
 
 if __name__ == '__main__':
@@ -146,7 +164,40 @@ if __name__ == '__main__':
 
     truth = np.ones((3, 3))
     # truth[1, :] = 1
+    n_thesholds = 6
+    metrics = dict([("F1",np.zeros(n_thesholds)), ("Recall",np.zeros(n_thesholds)),
+                            ("Precision",np.zeros(n_thesholds)), ("TP",np.zeros(n_thesholds)),
+                            ("TN", np.zeros(n_thesholds)), ("FP",np.zeros(n_thesholds)), ("FN",np.zeros(n_thesholds)),
+                            ("AUC", 0), ("TPR", np.zeros(n_thesholds)),
+                            ("FPR", np.zeros(n_thesholds))])
 
-    # print(dice(predicted, truth, 1.))
-    print(dice_loss(predicted, truth, 1.))
-    print(tversky_loss(truth, predicted, 0.9))
+    predicted = np.zeros((3, 3))
+    predicted[1, 1] = 0.5
+    predicted[0,1] = 0.25
+    predicted[0,2] = 0.4
+
+    target = np.zeros((3, 3))
+    target[0,2] = 1
+    get_metrics(predicted, target, metrics)
+
+    print_metrics(metrics, 1, "test")
+
+    dataset = np.zeros(1)
+
+    plt.title('Receiver Operating Characteristic')
+    plt.plot(metrics["FPR"] / len(dataset), metrics["TPR"] / len(dataset), 'b', label='AUC = %0.2f' % metrics["AUC"])
+    plt.legend(loc='lower right')
+    plt.plot([0, 1], [0, 1], 'r--')
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.show()
+    plt.savefig("ROC.png")
+    plt.show()
+    plt.close("ROC.png")
+
+
+
+
+
