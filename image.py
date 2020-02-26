@@ -138,7 +138,7 @@ def rgb_to_grey(mask):
 
 
 def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
-    chop_by_four = True
+    chop_by_four = False
     no_augment = False
     if n_augmentation_per_image == 0:
         no_augment = True
