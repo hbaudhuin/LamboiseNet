@@ -45,8 +45,8 @@ def compute_loss(prediction, target, bce_weight, metrics):
     #loss = bce #* bce_weight # + tvesrky * (1 - bce_weight)
     #loss = ce
 
-    #criterion = nn.CrossEntropyLoss(weight=bce_weight)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(weight=bce_weight)
+    #criterion = nn.CrossEntropyLoss()
     loss = criterion(prediction, target)
 
     #criterion = nn.BCELoss()

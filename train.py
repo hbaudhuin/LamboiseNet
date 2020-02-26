@@ -47,12 +47,20 @@ def train_model(model,
 
     losses_train = []
     losses_test = []
+    losses_test_19 = []
+    losses_test_91 = []
 
     if reload:
         try:
             prev_loss = np.loadtxt('Loss/last.pth')
+            #blank = np.zeros(shape=(prev_loss.shape[0], 4))
+            #blank[:, 0] = prev_loss[:, 0]
+            #blank[:, 1] = prev_loss[:, 1]
+            #prev_loss = blank
             losses_train = list(prev_loss[:, 0])
             losses_test = list(prev_loss[:, 1])
+            losses_test_19 = list(prev_loss[:, 2])
+            losses_test_91 = list(prev_loss[:, 3])
         except:
             print("Failed to load previous loss values")
 
@@ -75,6 +83,8 @@ def train_model(model,
 
         loss_train = 0
         loss_test = 0
+        loss_test_19 = 0
+        loss_test_91 = 0
 
         #Every epoch has a training and validation phase
 
@@ -119,7 +129,6 @@ def train_model(model,
                 ground_truth = ground_truth[0, ...]
 
                 images = images.to(device)
-                last_truths[i] = ground_truth
                 ground_truth = ground_truth.to(device)
 
                 with torch.no_grad():
@@ -127,8 +136,16 @@ def train_model(model,
 
                 loss = compute_loss(mask_predicted,
                                     ground_truth,
-                                    bce_weight=torch.Tensor([0.9, 0.1]).to(device), metrics=metrics)
+                                    bce_weight=torch.Tensor([0.5, 0.5]).to(device), metrics=metrics)
+                loss19 = compute_loss(mask_predicted,
+                                      ground_truth,
+                                      bce_weight=torch.Tensor([0.1, 0.9]).to(device), metrics=metrics)
+                loss91 = compute_loss(mask_predicted,
+                                      ground_truth,
+                                      bce_weight=torch.Tensor([0.9, 0.1]).to(device), metrics=metrics)
                 loss_test += loss / len(test_dataset)
+                loss_test_19 += loss19 / len(test_dataset)
+                loss_test_91 += loss91 / len(test_dataset)
                 progress_bar.set_postfix(**{'loss': loss.item()})
 
                 progress_bar.update(1)
@@ -138,6 +155,8 @@ def train_model(model,
         logging.info(f'Test loss  {loss_test}')
         losses_train.append(loss_train)
         losses_test.append(loss_test)
+        losses_test_19.append(loss_test_19)
+        losses_test_91.append(loss_test_91)
 
     save_masks(last_masks, last_truths, str(device), max_img=50, shuffle=False)
 
@@ -157,7 +176,7 @@ def train_model(model,
         logging.info(f'Model saved')
 
     # save the losses
-    loss_to_save = np.stack([np.asarray(losses_train), np.asarray(losses_test)], axis=1)
+    loss_to_save = np.stack([np.asarray(losses_train), np.asarray(losses_test), np.asarray(losses_test_19), np.asarray(losses_test_91)], axis=1)
     placeholder_file(
         'Loss/' + 'learning_' + str(learning_rate) + '_epoch_' + str(num_epochs) + '_time_' + current_datetime + '.pth')
     np.savetxt(
@@ -169,6 +188,8 @@ def train_model(model,
     # plot train and test losses
     plt.plot([i for i in range(0, len(losses_train))], losses_train, label='Train Loss')
     plt.plot([i for i in range(0, len(losses_test))], losses_test, label='Test Loss')
+    plt.plot([i for i in range(0, len(losses_test_19))], losses_test_19, label='Test Loss 19')
+    plt.plot([i for i in range(0, len(losses_test_91))], losses_test_91, label='Test Loss 91')
     plt.legend()
     plt.ylim(bottom=0)
     plt.xlabel("Epochs")
@@ -182,10 +203,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 5
+    num_epochs = 1
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.05
+    learning_rate = 0.01
     n_images = 1
     n_channels = 6
 
