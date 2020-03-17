@@ -69,11 +69,14 @@ def applyAugmentation(images):
     dice = np.random.randint(0, 10) / 10.0
     if dice >0.5:
         output = contrast(output, gamma)
+    '''
 
     # hue and saturation
     dice = np.random.randint(0, 10) / 10.0
     if dice > 0.8:
         output = hue_and_saturation(output, hue_range)
+
+    '''
     dice = np.random.randint(0, 10) / 10.0
     if dice > 0.7:
         output = gaussian_noise(output, scale_noise)

@@ -8,19 +8,17 @@ import matplotlib.pyplot as plt
 # TODO add other loss compution jaccard
 
 
-def compute_loss(prediction, target, bce_weight, metrics):
-
-
+def compute_loss(prediction, target, bce_weight):
 
     criterion = nn.CrossEntropyLoss(weight=bce_weight)
     loss = criterion(prediction, target)
 
     #criterion = nn.BCELoss()
-    #loss = criterion(prediction[:, 0, :, :], target)
-
-
-    metrics["loss"] += loss
-
+    #target_ = torch.cat((1-target, target), 0)
+    #print("prediction shape", prediction.shape)
+    #print("target shape", target_.shape)
+    #loss = criterion(prediction[0,...], target_*1.0)
+    #loss = criterion(prediction[0,0,...], target*1.0)
 
     return loss
 
@@ -34,23 +32,75 @@ def print_metrics(metrics, samples , phase):
 
     print("{}: {}".format(phase, ", ".join(outputs)))
 
-def get_metrics(predicted, target, metrics_dict):
 
-    predicted_copy = np.copy(predicted)
+def get_metrics(predicted, target, metrics_dict, thresholds):
 
-    for index, threshold in enumerate([ 0.1,0.2, 0.3,0.5, 0.7,0.9]):
-        predicted_thresholded = predicted
-        predicted_thresholded[predicted_copy >= threshold] = 1
-        predicted_thresholded[predicted_copy < threshold] = 0
+    predicted_ = None
+    target_ = None
+    try:
+        predicted_ = predicted.detach().numpy()
+        target_ = target.detach().numpy()
+    except TypeError:
+        # Fix when we're running on CUDA
+        predicted_ = predicted.cpu().detach().numpy()
+        target_ = target.cpu().detach().numpy()
+
+    predicted_copy = np.copy(predicted_)
+
+    predicted_ = 1 - predicted_ # BECAUSE WE WORK ON CLASS 1 INSTEAD OF 0
+    predicted_[predicted_<0] = 0
+
+    fprs = []
+    tprs = []
+
+    for index, threshold in enumerate(thresholds):
+
+        predicted_thresholded = np.copy(predicted_)
+        predicted_thresholded[predicted_thresholded >= threshold] = 1
+        predicted_thresholded[predicted_thresholded < threshold] = 0
         #print("THRESHOLD CHANGE " +str(threshold))
         true_positive = 0
         true_negative = 0
         false_positive = 0
         false_negative = 0
+
+        #print("pred")
+        #print(np.max(predicted_))
+        #print(np.mean(predicted_))
+        #print(np.min(predicted_))
+
+        #print("pred thres")
+        #print(np.max(predicted_thresholded))
+        #print(np.mean(predicted_thresholded))
+        #print(np.min(predicted_thresholded))
+
+        nb_pixels = target_.shape[0] * target_.shape[1]
+
+        TP_mat = predicted_thresholded * target_
+        FP_mat = predicted_thresholded - TP_mat
+        FN_mat = target_ - TP_mat
+
+        #for mat in [TP_mat, FP_mat, FN_mat]:
+        #    print("mat :")
+        #    print(np.max(mat))
+        #    print(np.mean(mat))
+        #    print(np.min(mat))
+
+        true_positive = np.sum(TP_mat)
+        false_positive = np.sum(FP_mat)
+        false_negative = np.sum(FN_mat)
+        true_negative = nb_pixels - true_positive - false_positive - false_negative
+
+        if true_positive + true_negative + false_positive + false_negative != 650*650 :
+            print("CONFUSION MATRIX MISMATCH")
+
+        '''
         for i in range(len(predicted_thresholded)) :
+            print("GM_", i)
 
 
             for j in range(len(predicted_thresholded[0])) :
+                print("GM__", j)
                 if predicted_thresholded[i, j] != target[i, j] :
                     if predicted_thresholded[i, j] == 0 :
 
@@ -64,7 +114,7 @@ def get_metrics(predicted, target, metrics_dict):
                 else :
 
                     true_positive +=1
-
+        '''
 
         if true_positive == 0 and false_negative == 0:
             recall= 1
@@ -104,7 +154,11 @@ def get_metrics(predicted, target, metrics_dict):
         metrics_dict["TPR"][index] += tpr
         metrics_dict["FPR"][index] += fpr
 
-    metrics_dict["AUC"] += (sum(metrics_dict["TPR"]) - sum(metrics_dict["FPR"]) +1) /2
+        fprs.append(fpr)
+        tprs.append(tpr)
+
+    #metrics_dict["AUC"] += (sum(metrics_dict["TPR"]) - sum(metrics_dict["FPR"]) + 1) / 2
+    metrics_dict["AUC"] += skmetrics.auc(fprs, tprs)
 
 
 def dice(prediction, target):

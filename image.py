@@ -209,7 +209,7 @@ def data_augmentation(before, after, mask, n_augmentation):
     return augmentedData
 
 
-def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False, color="blue", filename="mask_predicted.png"):
+def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False, color="blue", filename="mask_predicted.png", threshold=None):
 
     masks_predicted = unfold_batch(masks_predicted)
     ground_truths = unfold_batch(ground_truths)
@@ -246,21 +246,30 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
             arrs[...] = mp.detach().numpy()[0, ...]
             gt_arrs[...] = gt.detach().numpy()[0, ...]
 
-        #print("ARRS TYPE", type(arrs))
+        #print("ARRS TYPE", type(arrs), arrs.shape)
         #print("MASK MIN", np.min(arrs))
         #print("MASK MAX", np.max(arrs))
         #print("MASK AVG", np.mean(arrs))
 
         #arrs = mask_to_image(arrs)
         arrs = arrs[0, :, :]
-        arrs = 1 - arrs
 
-        #print("ARRS TYPE", type(arrs))
+        #print("ARRS TYPE", type(arrs), arrs.shape)
         #print("MASK MIN", np.min(arrs))
         #print("MASK MAX", np.max(arrs))
         #print("MASK AVG", np.mean(arrs))
+        arrs = 1 - arrs
+        arrs[arrs < 0] = 0
+
+        # Threshold
+        if threshold is not None:
+            arrs[arrs < threshold] = 0
+            arrs[arrs >= threshold] = 1
+
+        arrs *= 255
 
         rgbArray = np.ones((650, 650, 3), 'uint8')
+        rgbArray *= 255
         if color != "red":
             rgbArray[..., 0] = arrs
         rgbArray[..., 1] = arrs
@@ -272,7 +281,6 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
         #print("MASK MAX", np.max(rgbArray))
         #print("MASK AVG", np.mean(rgbArray))
 
-        rgbArray *= 255
 
         # GROUND TRUTH
 
