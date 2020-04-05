@@ -236,10 +236,10 @@ if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
-    num_epochs = 10
+    num_epochs = 1
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.0002
+    learning_rate = 0.0001
     n_images = 1
     n_channels = 6
 
@@ -266,14 +266,14 @@ if __name__ == '__main__':
     # model creation
 
     #model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
-    #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=4)
+    #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=2)
     #model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model = lightUnetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model.to(device)
     logging.info(f'Network creation:\n')
 
     # Print the summary of the model
-    #torchsummary.summary(model, (6, 650, 650))
+    #torchsummary.summary(model, input_size=(6, 650, 650))
 
 try:
     train_model(model=model,
