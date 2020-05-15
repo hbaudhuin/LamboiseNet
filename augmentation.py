@@ -73,7 +73,7 @@ def applyAugmentation(images):
 
     # hue and saturation
     dice = np.random.randint(0, 10) / 10.0
-    if dice > 0.8:
+    if dice > 0.5:
         output = hue_and_saturation(output, hue_range)
 
     '''

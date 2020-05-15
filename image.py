@@ -5,6 +5,7 @@ import imageio
 import torch
 from augmentation import *
 import os
+import matplotlib.pyplot as plt
 
 
 IMAGE_NUM = list(range(1, 33))
@@ -157,10 +158,14 @@ def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
         #print("prepare")
         input, mask = images_prepare(img_b, img_a, img_m)
         #print("augment")
-        augmentedData = data_augmentation(img_a, img_b, img_m, n_augmentation_per_image)
+        augmentedData = None
+        if not no_augment :
+            augmentedData = data_augmentation(img_a, img_b, img_m, n_augmentation_per_image)
 
         #print("store")
         j = i * (n_augmentation_per_image)
+        inputs[j] = input
+        masks[j] = mask
         if not no_augment:
             for l in range(0,len(augmentedData)):
                 inputs[j+l] = augmentedData[l][0]
@@ -173,8 +178,7 @@ def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
                         sub_input[j+l+k] = temp[:,int(k/2) * 325 : int(k/2) * 325 + 325,k%2 *325 : k%2 *325 + 325]
                         sub_mask[j+l+k] = temp2[ int(k/2) * 325: int(k/2) * 325 + 325, k%2 *325: k%2 *325 + 325]
 
-        inputs[j] = input
-        masks[j] = mask
+
         if chop_by_four:
             for k in range(0, 4):
 

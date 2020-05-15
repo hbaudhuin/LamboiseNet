@@ -7,6 +7,7 @@ from sklearn.metrics import auc, roc_curve
 import torch.nn as nn
 import logging
 import matplotlib.pyplot as plt
+import time
 
 
 def evaluation(model, dataset, device, save_mask=True, plot_roc=True, print_metric=True):
@@ -37,9 +38,11 @@ def evaluation(model, dataset, device, save_mask=True, plot_roc=True, print_metr
             image = image.to(device)
             ground_truth = ground_truth.to(device)
 
+            T0_FP_EVAL = time.time()
             with torch.no_grad():
                 mask_predicted = model(image)
             last_masks[i] = mask_predicted
+            print("FP EVAL", time.time()-T0_FP_EVAL)
 
             progress_bar.set_postfix(**{'loss': loss})
             bce_weight = torch.Tensor([1, 5]).to(device)

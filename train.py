@@ -83,7 +83,9 @@ def train_model(model,
     for epochs in range(0, num_epochs):
 
         # new dataset with random augmentation at each epoch
+        T0_LOAD = time.time()
         train_dataset = load_dataset(IMAGE_NUM[0:22], 2, batch_size=batch_size)
+        print("load_dataset time", time.time()-T0_LOAD)
 
         logging.info(f'Epoch {epochs}')
         if len(losses_train) > 100 :
@@ -115,7 +117,9 @@ def train_model(model,
                 last_truths[i] = ground_truth
                 ground_truth = ground_truth.to(device)
 
+                T0_FP_TRAIN = time.time()
                 mask_predicted = model(images)
+                print("FP_TRAIN", time.time()-T0_FP_TRAIN)
 
                 last_masks[i] = mask_predicted
 
@@ -126,9 +130,11 @@ def train_model(model,
                 progress_bar.set_postfix(**{'loss': loss.item()})
 
                 # zero the gradient and back propagate
+                T0_BP_TRAIN = time.time()
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+                print("BP_TRAIN", time.time() - T0_BP_TRAIN)
 
                 progress_bar.update(1)
 
@@ -165,7 +171,9 @@ def train_model(model,
 
                 progress_bar.update(1)
         '''
+        T0_EVAL = time.time()
         test_metrics = evaluation(model, test_dataset, device, save_mask=False, plot_roc=False, print_metric=False)
+        print("evaluation time", time.time() - T0_EVAL)
         loss_test = test_metrics["loss"]
 
         #print_metrics(metrics, len(train_dataset), phase)
@@ -239,7 +247,7 @@ if __name__ == '__main__':
     num_epochs = 1
     num_classes = 2
     batch_size = 1
-    learning_rate = 0.0001
+    learning_rate = 0.000000001
     n_images = 1
     n_channels = 6
 
@@ -265,15 +273,15 @@ if __name__ == '__main__':
 
     # model creation
 
-    #model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
     #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=2)
     #model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
-    model = lightUnetPlusPlus(n_channels=n_channels, n_classes=num_classes)
+    #model = lightUnetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model.to(device)
     logging.info(f'Network creation:\n')
 
     # Print the summary of the model
-    #torchsummary.summary(model, input_size=(6, 650, 650))
+    torchsummary.summary(model, input_size=(6, 600, 600))
 
 try:
     train_model(model=model,
