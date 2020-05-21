@@ -139,7 +139,6 @@ def rgb_to_grey(mask):
 
 
 def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
-    chop_by_four = False
     no_augment = False
     if n_augmentation_per_image == 0:
         no_augment = True
@@ -147,8 +146,7 @@ def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
 
     inputs = np.zeros(shape=((n_augmentation_per_image) * len(img_nums), 6, 650, 650))
     masks  = np.zeros(shape=((n_augmentation_per_image) * len(img_nums), 650, 650), dtype=np.long)
-    sub_input = np.zeros(shape=((n_augmentation_per_image) * len(img_nums) * 4, 6, 325, 325))
-    sub_mask = np.zeros(shape=((n_augmentation_per_image) * len(img_nums) * 4, 325, 325), dtype=np.long)
+
     for i, img_num in enumerate(img_nums):
         #print("Loading image "+str(i))
         img_b = open_image("DATA/Earth_" + str(img_num) + "/before.png")
@@ -170,32 +168,11 @@ def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
             for l in range(0,len(augmentedData)):
                 inputs[j+l] = augmentedData[l][0]
                 masks[j+l] = augmentedData[l][1]
-                if chop_by_four :
-                    for k in range(0,4):
-                        temp = augmentedData[l][0]
-                        temp2 = augmentedData[l][1]
 
-                        sub_input[j+l+k] = temp[:,int(k/2) * 325 : int(k/2) * 325 + 325,k%2 *325 : k%2 *325 + 325]
-                        sub_mask[j+l+k] = temp2[ int(k/2) * 325: int(k/2) * 325 + 325, k%2 *325: k%2 *325 + 325]
-
-
-        if chop_by_four:
-            for k in range(0, 4):
-
-                sub_input[j + k] = input[:, int(k / 2) * 325: int(k / 2) * 325 + 325, k % 2 * 325: k % 2 * 325 + 325]
-                sub_mask[j + k] = mask[int(k / 2) * 325: int(k / 2) * 325 + 325, k % 2 * 325: k % 2 * 325 + 325]
-        #print("inputs", type(inputs), inputs.shape)
-        #print("masks ", type(masks), masks.shape)
-
-    #print("fold")
+        inputs[j] = input
+        masks[j] = mask
     inputs, masks = fold_batch(inputs, masks, batch_size)
-    sub_input, sub_mask = fold_batch(sub_input, sub_mask, batch_size)
-    if chop_by_four :
-        return dataset_to_dataloader(sub_input, sub_mask)
-    else :
-        return dataset_to_dataloader(inputs, masks)
-
-
+    return dataset_to_dataloader(inputs, masks)
 
 
 def data_augmentation(before, after, mask, n_augmentation):

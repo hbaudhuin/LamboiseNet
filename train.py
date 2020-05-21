@@ -269,8 +269,6 @@ if __name__ == '__main__':
 
     logging.info(f'Dataset generated')
 
-    # TODO add check of arguments
-
     # model creation
 
     model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
@@ -301,6 +299,3 @@ except KeyboardInterrupt:
 finally:
     t_end = time.time()
     print("\nDone in " + str(int((t_end - t_start))) + " sec")
-
-# TODO start writing memoire to keep track of source (tqdm https://towardsdatascience.com/progress-bars-in-python-4b44e8a4c482)
-# TODO Use GRADCAM !!

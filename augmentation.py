@@ -5,8 +5,8 @@ from imgaug.augmenters import Affine
 
 def applyAugmentation(images):
     """
-    Aply augmentations to the images. Augmentation are : vertical flipping, horzontal flipping, rotation, cropping,
-    shearing, scaling, blurring, contrast adjusting, adding noise and hue and saturation change. They are appied with a
+    Apply augmentations to the images. Augmentation are : vertical flipping, horzontal flipping, rotation, cropping,
+    shearing, scaling, blurring, contrast adjusting, adding noise and hue and saturation change. They are aplied with a
     certain probability.
     :param images: RGB matrixes of two images and the corresponding mask
     :return: RGB matrixes of two images and the corresponding mask with modification applied.
@@ -43,10 +43,10 @@ def applyAugmentation(images):
 
     # flip
     dice = np.random.randint(0, 10) / 10.0
-    if dice < 0.5:
+    if dice < 0:
         output = horizontal_flip(output)
     dice = np.random.randint(0, 10) / 10.0
-    if dice < 0.5:
+    if dice < 10:
         output = vertical_flip(output)
 
     '''

@@ -1,6 +1,6 @@
 import torch as torch
 from tqdm import tqdm
-from loss import dice_loss, tversky_loss, compute_loss, get_metrics, print_metrics
+from loss import compute_loss, get_metrics, print_metrics
 from image import save_masks
 import numpy as np
 from sklearn.metrics import auc, roc_curve
