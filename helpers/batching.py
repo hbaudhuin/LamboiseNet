@@ -7,9 +7,5 @@ def batch(batch_size, dataset_length) :
     return batch_index[:batch_size]
 
 
-
-
-
-
 if __name__ == '__main__':
     print(batch(1, 1))

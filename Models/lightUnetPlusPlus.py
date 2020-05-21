@@ -1,14 +1,22 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-from Models.basicUnet import Downscaling_layer, ExpandingLayer, DoubleConvolutionLayer, FinalLayer, Bottleneck
+from Models.basicUnet import Downscaling_layer, DoubleConvolutionLayer, FinalLayer
 
 
 class lightUnetPlusPlus(nn.Module):
+    """
+    The class lightUnetPlusPlus extends torch Module. The main difference with the unetPlusPlus has fewer layers.
+    """
     def __init__(self, n_channels, n_classes):
+        """
+        Initialises a lightUnetPlusPlus object.
+        :param n_channels: number of channels in the input
+        :param n_classes: number of classes to detect thus also the number of output feature maps
+        """
         super(lightUnetPlusPlus, self).__init__()
 
-        self.name = " light Unet++"
+        self.name = "light Unet++"
 
         self.upsampling = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
@@ -36,7 +44,11 @@ class lightUnetPlusPlus(nn.Module):
         self.final = FinalLayer(filter_sizes[0], n_classes,n_classes)
 
     def forward(self, input):
-
+        """
+        Describe the flow of the input given to the UnetPlusPlus.
+        :param input: input matrix given to the unetPlusPlus
+        :return: the input after passing throught the Net.
+        """
         x0_0 = self.layer0_0(input)
 
         x1_0 = self.layer1_0(x0_0)
@@ -59,15 +71,24 @@ class lightUnetPlusPlus(nn.Module):
         return output
 
     def multiple_cat(self, array):
+        """
+        Helper function to concatenate an array of matrixes
+        :array: array of matrixes to contatenate on the chanels axis
+        """
         to_be_cat = array[0]
         for i in range(1, len(array)):
             to_be_cat = self.crop_and_cat(to_be_cat, array[i])
         return to_be_cat
 
     def crop_and_cat(self, x1, x2):
+        """
+        Helper function to concatenante x1 and x2 on the channels dimension and pad of one pixel if there is
+        a size difference.
+        :param x1, x2:  two matrixes with the same number of channels and up to 1 pixel of difference in size
+        :return: a concatenanted version of x1 and x2  on the channels axis.
+        """
         diffY = x2.size()[2] - x1.size()[2]
         diffX = x2.size()[3] - x1.size()[3]
-        #print('sizes',x1.size(),x2.size(),diffX // 2, diffX - diffX//2, diffY // 2, diffY - diffY//2)
         x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
                         diffY // 2, diffY - diffY // 2])
         return torch.cat([x1, x2], 1)
