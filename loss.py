@@ -1,28 +1,46 @@
-import torch
 import numpy as np
-import torch.nn.functional as F
 import torch.nn as nn
 import sklearn.metrics as skmetrics
 import matplotlib.pyplot as plt
 
 
-
 def compute_loss(prediction, target, bce_weight):
+    """
+    Compute the value of the cross entropy loss between the prediciton made by the model and the target.
+    :param prediction: feature map predicted by the model
+    :param target: groud truth matrix
+    :param bce_weight: weigth given to each class
+    :return:
+    """
     criterion = nn.CrossEntropyLoss(weight=bce_weight)
     loss = criterion(prediction, target)
     return loss
 
-def print_metrics(metrics, samples , phase):
+
+def print_metrics(metrics, samples, phase):
+    """
+    Print a dictionary of metrics computed averaged over the samples
+    :param metrics: dictionary of metrics
+    :param samples: number of instances on wich each metric was computed
+    :param phase: either "train" or "test". Printed for clarity.
+    """
     outputs = []
     for k in metrics.keys():
-        if type(metrics[k]) is not 'str' :
-            print(str(k)+" "+str(metrics[k]))
-        else :
+        if type(metrics[k]) is not 'str':
+            print(str(k) + " " + str(metrics[k]))
+        else:
             outputs.append("{}: {:4f}".format(k, metrics[k] / samples))
     print("{}: {}".format(phase, ", ".join(outputs)))
 
 
 def get_metrics(predicted, target, metrics_dict, thresholds):
+    """
+    compute different metrics and measures for each threshold given and save them in a dictionary.
+    :param predicted: predicted feature map
+    :param target: ground truth feature map
+    :param metrics_dict: dictionary used to store the metrics. It is given empty but already initialised.
+    :param thresholds: array of different thresholds for which to compute the metrics
+    """
     try:
         predicted_ = predicted.detach().numpy()
         target_ = target.detach().numpy()
@@ -31,8 +49,8 @@ def get_metrics(predicted, target, metrics_dict, thresholds):
         predicted_ = predicted.cpu().detach().numpy()
         target_ = target.cpu().detach().numpy()
 
-    predicted_ = 1 - predicted_ # BECAUSE WE WORK ON CLASS 1 INSTEAD OF 0
-    predicted_[predicted_<0] = 0
+    predicted_ = 1 - predicted_  # BECAUSE WE WORK ON CLASS 1 INSTEAD OF 0
+    predicted_[predicted_ < 0] = 0
 
     fprs = []
     tprs = []
@@ -54,33 +72,32 @@ def get_metrics(predicted, target, metrics_dict, thresholds):
         false_negative = np.sum(FN_mat)
         true_negative = nb_pixels - true_positive - false_positive - false_negative
 
-        if true_positive + true_negative + false_positive + false_negative != 650*650 :
+        if true_positive + true_negative + false_positive + false_negative != 650 * 650:
             print("CONFUSION MATRIX MISMATCH")
         if true_positive == 0 and false_negative == 0:
-            recall= 1
+            recall = 1
         else:
             recall = true_positive / (true_positive + false_negative)
 
-        if true_positive ==0 and false_positive == 0 :
-            precision =1
-        else :
-            precision = true_positive / (true_positive+false_positive) #tpr
+        if true_positive == 0 and false_positive == 0:
+            precision = 1
+        else:
+            precision = true_positive / (true_positive + false_positive)  # tpr
 
-        if true_positive == 0 and false_negative == 0 :
+        if true_positive == 0 and false_negative == 0:
             tpr = 1
-        else :
+        else:
             tpr = true_positive / (true_positive + false_negative)
 
-        if true_negative == 0 and false_positive == 0 :
+        if true_negative == 0 and false_positive == 0:
             specificity = 1
-        else :
+        else:
             specificity = true_negative / (true_negative + false_positive)
 
-        if recall * precision == 0 :
+        if recall * precision == 0:
             f1 = 0
-        else :
-            f1 = 2*recall*precision/(recall+precision)
-
+        else:
+            f1 = 2 * recall * precision / (recall + precision)
 
         fpr = 1 - specificity
 
@@ -100,6 +117,7 @@ def get_metrics(predicted, target, metrics_dict, thresholds):
     metrics_dict["AUC"] += skmetrics.auc(fprs, tprs)
 
 
+# TODO supprimer ça ?
 if __name__ == '__main__':
     predicted = np.zeros((3, 3))
     predicted[1, 1] = 1
@@ -107,19 +125,19 @@ if __name__ == '__main__':
     truth = np.ones((3, 3))
     # truth[1, :] = 1
     n_thesholds = 6
-    metrics = dict([("F1",np.zeros(n_thesholds)), ("Recall",np.zeros(n_thesholds)),
-                            ("Precision",np.zeros(n_thesholds)), ("TP",np.zeros(n_thesholds)),
-                            ("TN", np.zeros(n_thesholds)), ("FP",np.zeros(n_thesholds)), ("FN",np.zeros(n_thesholds)),
-                            ("AUC", 0), ("TPR", np.zeros(n_thesholds)),
-                            ("FPR", np.zeros(n_thesholds))])
+    metrics = dict([("F1", np.zeros(n_thesholds)), ("Recall", np.zeros(n_thesholds)),
+                    ("Precision", np.zeros(n_thesholds)), ("TP", np.zeros(n_thesholds)),
+                    ("TN", np.zeros(n_thesholds)), ("FP", np.zeros(n_thesholds)), ("FN", np.zeros(n_thesholds)),
+                    ("AUC", 0), ("TPR", np.zeros(n_thesholds)),
+                    ("FPR", np.zeros(n_thesholds))])
 
     predicted = np.zeros((3, 3))
     predicted[1, 1] = 0.5
-    predicted[0,1] = 0.25
-    predicted[0,2] = 0.4
+    predicted[0, 1] = 0.25
+    predicted[0, 2] = 0.4
 
     target = np.zeros((3, 3))
-    target[0,2] = 1
+    target[0, 2] = 1
     get_metrics(predicted, target, metrics)
 
     print_metrics(metrics, 1, "test")
@@ -138,8 +156,3 @@ if __name__ == '__main__':
     plt.savefig("ROC.png")
     plt.show()
     plt.close("ROC.png")
-
-
-
-
-
