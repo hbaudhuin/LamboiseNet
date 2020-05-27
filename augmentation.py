@@ -77,6 +77,7 @@ def applyAugmentation(images):
         output = hue_and_saturation(output, hue_range)
 
     '''
+    # noise
     dice = np.random.randint(0, 10) / 10.0
     if dice > 0.7:
         output = gaussian_noise(output, scale_noise)

@@ -8,137 +8,22 @@ import os
 import matplotlib.pyplot as plt
 
 
+# Hardcoded instance numbers
+# For the Earth Dataset, we have 32 instances from 1 to 32
 IMAGE_NUM = list(range(1, 33))
 
 
-def main():
-
-    '''
-    for im_num in image_num:
-        print(im_num)
-        image = open_image("../AOI_3_Paris_Train/AOI_3_Paris_Train/RGB-PanSharpen/RGB-PanSharpen_AOI_3_Paris_img"+str(im_num)+".tif")
-        arrs = normalize(image)
-        save_image(arrs, "DATA/patch1/out_"+str(im_num)+".png")
-    '''
-
-    '''
-    image = open_image("DATA/patch1/patch1_after.png")
-    arrs = normalize(image)
-    save_image(arrs, "DATA/patch1/patch1_after_norm.png")
-    '''
-
-    dataloader = load_dataset(["1180", "1180", "1180"])
-    print([x for x in dataloader])
-
-
-def open_image(filename):
-    #print("opening")
-
-    # Loading a tif file
-    if filename[-4:].lower() in [".tif", "tiff"]:
-        return tif.imread(filename)
-    # Loading a png file
-    else:
-        return imageio.imread(filename)
-
-
-def image_to_arrs(image):
-    arrs = [None, None, None]
-    for i in range(3):
-        arr = np.copy(image[..., i])
-        arrs[i] = arr
-    return arrs
-
-
-def images_prepare(img_before, img_after, img_mask):
-    i_b = img_before[..., [0, 1, 2]]
-    i_a = img_after[..., [0, 1, 2]]
-    i_b = normalize(i_b)
-    i_a = normalize(i_a)
-    i_m = rgb_to_grey(img_mask)
-    i_m_reverse = reverse_mask(i_m)
-    i_join = np.zeros(shape=(6, i_b.shape[0], i_b.shape[1]))
-    i_join[[0, 1, 2], ...] = np.transpose(i_b[...], axes=(2, 0, 1))
-    i_join[[3, 4, 5], ...] = np.transpose(i_a[...], axes=(2, 0, 1))
-    i_m_join = np.zeros(shape = (2, i_m.shape[0], i_m.shape[1]))
-    i_m_join[0,...] = i_m
-    i_m_join[1,...] = i_m_reverse
-    return i_join, i_m
-
-
-def dataset_to_dataloader(inputs, masks):
-
-    tensor_x = torch.stack([torch.Tensor(i) for i in inputs])
-    tensor_y = torch.stack([torch.tensor(i, dtype=torch.long) for i in masks])
-
-    my_dataset = torch.utils.data.TensorDataset(tensor_x, tensor_y)
-    my_dataloader = torch.utils.data.DataLoader(my_dataset)
-
-    return my_dataloader
-
-
-def normalize(image):
-    #print("normalizing")
-
-    # R G B, with sometimes a 4th Alpha channel on PNG
-    arrs = [None, None, None]
-    for i in range(3):
-
-        arr = np.copy(image[...,i])
-
-        # Normalization between 0 and 255
-        mx = arr.max()
-        arr = arr / (1.0 * mx) * 255
-
-        # Normalization using the average value of the channel
-        #av = arr.mean()
-        #print(av)
-        #arr = arr * 100 / av
-
-        # Remove outliers and normalize
-        hist = np.sort(arr.flatten())
-        lo = hist[int(0.025 * len(hist))]
-        hi = hist[int(0.975 * len(hist))]
-        arr = (arr-lo) / (hi-lo) * 255.0
-
-        # Limiting the min and maximal value
-        arr[arr < 0] = 0
-        arr[arr > 255] = 255
-
-        #print(arr.shape)
-        arrs[i] = arr
-
-        arrs_np = np.zeros(shape=(650, 650, 3))
-        arrs_np[:, :, 0] = arrs[0]
-        arrs_np[:, :, 1] = arrs[1]
-        arrs_np[:, :, 2] = arrs[2]
-        #print(arrs_np.shape)
-
-    return arrs_np
-
-
-def save_image(arrs, location):
-    #print("merging")
-    rgbArray = np.zeros((arrs[0].shape[0], arrs[0].shape[1], 3), 'uint8')
-    rgbArray[..., 0] = arrs[0]
-    rgbArray[..., 1] = arrs[1]
-    rgbArray[..., 2] = arrs[2]
-
-    #print("saving")
-    img = Image.fromarray(rgbArray)
-    if not os.path.exists(os.path.dirname(location)):
-        os.makedirs(os.path.dirname(location))
-    img.save(location)
-
-
-def rgb_to_grey(mask):
-    grey = np.zeros(shape=(mask.shape[0], mask.shape[1]), dtype=np.long)
-    grey[...] = mask[..., 0]
-    grey[grey != 0] = 1.0
-    return grey
+""" Loading the dataset """
 
 
 def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
+    """
+    Loads images from the Earth dataset, applies the necessary preprocessing and put them into a dataloader format
+    :param img_nums: list of numbers of the instance we want to load
+    :param n_augmentation_per_image: the number of augmented instances to generate per instance, use 0 to not perform data_augmentation
+    :param batch_size: number of instances per batch
+    :return: a dataloader object containing the dataset
+    """
     no_augment = False
     if n_augmentation_per_image == 0:
         no_augment = True
@@ -148,19 +33,20 @@ def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
     masks  = np.zeros(shape=((n_augmentation_per_image) * len(img_nums), 650, 650), dtype=np.long)
 
     for i, img_num in enumerate(img_nums):
-        #print("Loading image "+str(i))
+        # Opening
         img_b = open_image("DATA/Earth_" + str(img_num) + "/before.png")
         img_a = open_image("DATA/Earth_" + str(img_num) + "/after.png")
         img_m = open_image("DATA/Earth_" + str(img_num) + "/mask.png")
 
-        #print("prepare")
+        # Prepare
         input, mask = images_prepare(img_b, img_a, img_m)
-        #print("augment")
+
+        # Augmentation
         augmentedData = None
         if not no_augment :
             augmentedData = data_augmentation(img_a, img_b, img_m, n_augmentation_per_image)
 
-        #print("store")
+        # Storing
         j = i * (n_augmentation_per_image)
         inputs[j] = input
         masks[j] = mask
@@ -171,11 +57,21 @@ def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
 
         inputs[j] = input
         masks[j] = mask
+
+    # Batching
     inputs, masks = fold_batch(inputs, masks, batch_size)
     return dataset_to_dataloader(inputs, masks)
 
 
 def data_augmentation(before, after, mask, n_augmentation):
+    """
+    Applies data augmentation on instances
+    :param before: the "before" image of an instance
+    :param after: the "after" image of an instance
+    :param mask: the ground truth mask of an instance
+    :param n_augmentation: number of different augmented instances to generate
+    :return: a list of augmented instances
+    """
     augmentedData = []
     input = np.zeros((3, 650, 650, 3))
 
@@ -190,12 +86,90 @@ def data_augmentation(before, after, mask, n_augmentation):
     return augmentedData
 
 
+def images_prepare(img_before, img_after, img_mask):
+    """
+    Sub-function of load_dataset
+    Merges the before and after images, applies the necessary transformation on the three given images
+    :param img_before: the "before" image of an instance
+    :param img_after: the "after" image of an instance
+    :param img_mask: the ground truth mask of an instance
+    :return: i_join : the before and after images merged, i_m : the processed mask
+    """
+    i_b = img_before[..., [0, 1, 2]]
+    i_a = img_after[..., [0, 1, 2]]
+    i_b = normalize(i_b)
+    i_a = normalize(i_a)
+    i_m = grey_split(img_mask)
+    i_m_reverse = reverse_mask(i_m)
+    i_join = np.zeros(shape=(6, i_b.shape[0], i_b.shape[1]))
+    i_join[[0, 1, 2], ...] = np.transpose(i_b[...], axes=(2, 0, 1))
+    i_join[[3, 4, 5], ...] = np.transpose(i_a[...], axes=(2, 0, 1))
+    i_m_join = np.zeros(shape = (2, i_m.shape[0], i_m.shape[1]))
+    i_m_join[0,...] = i_m
+    i_m_join[1,...] = i_m_reverse
+    return i_join, i_m
+
+
+def dataset_to_dataloader(inputs, masks):
+    """
+    Converts a dataset to the PyTorch dataloader format
+    :param inputs: list of input image pairs
+    :param masks: list of input ground truth masks
+    :return: a dataloader containing the dataset
+    """
+    tensor_x = torch.stack([torch.Tensor(i) for i in inputs])
+    tensor_y = torch.stack([torch.tensor(i, dtype=torch.long) for i in masks])
+
+    my_dataset = torch.utils.data.TensorDataset(tensor_x, tensor_y)
+    my_dataloader = torch.utils.data.DataLoader(my_dataset)
+
+    return my_dataloader
+
+
+""" IO """
+
+
+def placeholder_file(path):
+    """
+    Creates an empty file at the given path if it doesn't already exists
+    :param path: relative path of the file to be created
+    """
+    import os
+    if not os.path.exists(path):
+        with open(path, 'w'): pass
+
+
+def open_image(filename):
+    """
+    opens an image file
+    :param filename: the relative path of the image file
+    :return: the image in a compatible format
+    """
+    # Loading a tif file
+    if filename[-4:].lower() in [".tif", "tiff"]:
+        return tif.imread(filename)
+    # Loading a png file
+    else:
+        return imageio.imread(filename)
+
+
 def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False, color="blue", filename="mask_predicted.png", threshold=None):
+    """
+    Saves multiple ground truths and their prediction on a big single image
+    :param masks_predicted: list of predicted images (batched)
+    :param ground_truths: list of ground truths (batched)
+    :param device: device used to train the model (cpu or cuda)
+    :param max_img: maximum number if images to display
+    :param shuffle: random image order
+    :param color: background color for the predicted masks (blue or red)
+    :param filename: in which file we will save the image
+    :param threshold: used to find the class of each pixel, should be between 0 and 1
+    """
 
     masks_predicted = unfold_batch(masks_predicted)
     ground_truths = unfold_batch(ground_truths)
 
-    #TODO clean the code
+
     max_img = min(max_img, len(masks_predicted))
     import math
     nrow = min(max_img, 10)
@@ -213,32 +187,16 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
         mp = masks_predicted[n]
         gt = ground_truths[n]
 
-        #print("MP SH", mp.shape)
-        #print("GT SH", gt.shape)
-
         arrs = np.zeros(shape=(2, 650, 650))
         gt_arrs = np.zeros(shape=(650, 650))
-        if device == 'cuda' :
+        if device == 'cuda':
             arrs[...] = mp.cpu().detach().numpy()[...]
-            #print("mp_sh", mp.cpu().detach().numpy()[...].shape)
             gt_arrs[...] = gt.cpu().detach().numpy()[...]
-            #print("gt_sh", gt.cpu().detach().numpy()[...].shape)
-        else :
+        else:
             arrs[...] = mp.detach().numpy()[0, ...]
             gt_arrs[...] = gt.detach().numpy()[0, ...]
 
-        #print("ARRS TYPE", type(arrs), arrs.shape)
-        #print("MASK MIN", np.min(arrs))
-        #print("MASK MAX", np.max(arrs))
-        #print("MASK AVG", np.mean(arrs))
-
-        #arrs = mask_to_image(arrs)
         arrs = arrs[0, :, :]
-
-        #print("ARRS TYPE", type(arrs), arrs.shape)
-        #print("MASK MIN", np.min(arrs))
-        #print("MASK MAX", np.max(arrs))
-        #print("MASK AVG", np.mean(arrs))
         arrs = 1 - arrs
         arrs[arrs < 0] = 0
 
@@ -249,6 +207,8 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
 
         arrs *= 255
 
+        # PREDICTED
+
         rgbArray = np.ones((650, 650, 3), 'uint8')
         rgbArray *= 255
         if color != "red":
@@ -256,12 +216,6 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
         rgbArray[..., 1] = arrs
         if color != "blue":
             rgbArray[..., 2] = arrs
-
-        #print("RGBARR TYPE", type(rgbArray))
-        #print("MASK MIN", np.min(rgbArray))
-        #print("MASK MAX", np.max(rgbArray))
-        #print("MASK AVG", np.mean(rgbArray))
-
 
         # GROUND TRUTH
 
@@ -272,11 +226,6 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
 
         gt_rgbArray *= 255
 
-        #print("GTRGBARR TYPE", type(gt_rgbArray))
-        #print("MASK MIN", np.min(gt_rgbArray))
-        #print("MASK MAX", np.max(gt_rgbArray))
-        #print("MASK AVG", np.mean(gt_rgbArray))
-
         out[650*ir:650*(ir+1), (2*650*ic):(2*650*ic+650), 0:3] = rgbArray
         out[650*ir:650*(ir+1), (2*650*ic+650):(2*650*(ic+1)), 0:3] = gt_rgbArray
 
@@ -285,115 +234,93 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
     img.save(filename)
 
 
+""" Image and Mask manipulation """
 
 
-def save_mask_predicted(mask_predicted, ground_truth, device, color="blue", filename="mask_predicted.png"):
+def normalize(image):
+    """
+    Independant range normalization on the three color channel of an image
+    :param image: the image to normalize as a numpy matrix
+    :return: the normalized image
+    """
 
-    arrs = np.zeros(shape=(650, 650))
-    gt_arrs = np.zeros(shape=(650, 650))
-    if device == 'cuda' :
-        arrs[...] = mask_predicted.detach().numpy()[0, ...]
-        gt_arrs[...] = ground_truth.detach().numpy()[0, ...]
-    else :
-        arrs[...] = mask_predicted.cpu().detach().numpy()[0, ...]
-        gt_arrs[...] = ground_truth.cpu().detach().numpy()[0, ...]
+    # R G B, with sometimes a 4th Alpha channel on PNG
+    arrs = [None, None, None]
+    for i in range(3):
 
-    arrs = mask_to_image(arrs)
+        arr = np.copy(image[...,i])
 
+        # Normalization between 0 and 255
+        mx = arr.max()
+        arr = arr / (1.0 * mx) * 255
 
-    # MASK PREDICTED
+        # Remove outliers and normalize
+        hist = np.sort(arr.flatten())
+        lo = hist[int(0.025 * len(hist))]
+        hi = hist[int(0.975 * len(hist))]
+        arr = (arr-lo) / (hi-lo) * 255.0
 
-    lo = np.min(arrs)
-    hi = min(np.max(arrs),2)
-    arrs = (arrs - lo) / max((hi - lo), 0.001)
-    arrs = 1 - arrs
+        # Limiting the min and maximal value
+        arr[arr < 0] = 0
+        arr[arr > 255] = 255
 
-    rgbArray = np.ones((650, 650, 3), 'uint8')
-    if color != "red":
-        rgbArray[..., 0] = arrs
-    rgbArray[..., 1] = arrs
-    if color != "blue":
-        rgbArray[..., 2] = arrs
+        arrs[i] = arr
 
-    rgbArray *= 255
+    arrs_np = np.zeros(shape=(650, 650, 3))
+    arrs_np[:, :, 0] = arrs[0]
+    arrs_np[:, :, 1] = arrs[1]
+    arrs_np[:, :, 2] = arrs[2]
 
-    # GROUND TRUTH
-
-    gt_rgbArray = np.ones((650, 650, 3), 'uint8')
-    gt_rgbArray[..., 0] = gt_arrs
-    gt_rgbArray[..., 1] = gt_arrs
-    gt_rgbArray[..., 2] = gt_arrs
-
-    gt_rgbArray *= 255
-
-    fusion = np.ones((650, 2*650, 3), 'uint8')
-    fusion[0:650, 0:650, 0:3] = rgbArray
-    fusion[0:650, 650:(2*650), 0:3] = gt_rgbArray
-
-    img = Image.fromarray(fusion)
-    img = img.convert("RGB")
-    img.save(filename)
+    return arrs_np
 
 
-def process_patch(patch_number):
-    patch = "patch" + str(patch_number)
-    b_path = "DATA/" + patch + "/" + patch + "_before_mod.png"
-    a_path = "DATA/" + patch + "/" + patch + "_after_norm.png"
-    m_path = "DATA/" + patch + "/" + patch + "_mask.png"
-
-    b_all = open_image(b_path)
-    a_all = open_image(a_path)
-    m_all = open_image(m_path)
-    print(b_all.shape)
-
-    for ir in range(5):
-        for ic in range(5):
-            b_sub = b_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, [0,1,2]]
-            a_sub = a_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, [0,1,2]]
-            m_sub = m_all[ir * 650:(ir + 1) * 650, ic * 650:(ic + 1) * 650, [0,1,2]]
-            b_sub = np.transpose(b_sub, axes=(2, 0, 1))
-            a_sub = np.transpose(a_sub, axes=(2, 0, 1))
-            m_sub = np.transpose(m_sub, axes=(2, 0, 1))
-            print(b_sub.shape)
-
-            if np.average(b_sub) > 10 :
-                save_image(b_sub, "DATA/Paris_tmp_" + str(patch_number) + "_" + str(ir * 5 + ic) + "/before.png")
-                save_image(a_sub, "DATA/Paris_tmp_" + str(patch_number) + "_" + str(ir * 5 + ic) + "/after.png")
-                save_image(m_sub, "DATA/Paris_tmp_" + str(patch_number) + "_" + str(ir * 5 + ic) + "/mask.png")
-
-
-def placeholder_file(path):
-    import os
-    if not os.path.exists(path):
-        with open(path, 'w'): pass
-
-
-def mask_to_image(masks) :
+def mask_to_image(masks):
+    """
+    From 2 class masks, returns a single mask indicating the class of each pixel (trivial for 2 classes)
+    :param masks: a numpy matrix of shape 2x650x650
+    :return: a 650x650 mask containing the class at each pixel
+    """
     mask = np.zeros((650, 650))
     for i in range(650):
-        for j in range(650) :
-            #TODO FIX
+        for j in range(650):
             mask[i, j] = masks[0, i, j]
-            """
-            selected_class = masks[:, i, j] > 0.5
-            if len(selected_class) > 1 :
-                #print("Confidence above 0.5 for both")
-                mask[i,j] = 1
-            elif len(selected_class) < 1 :
-                print("No class found")
-                mask[ i, j] = 1
-            else :
-                mask[i, j] = selected_class
-            """
     return mask
 
-def reverse_mask(mask) :
+
+def reverse_mask(mask):
+    """
+    Switches the classes of a 2-class mask
+    :param mask: numpy matrix
+    :return: the reversed mask
+    """
     reversed_mask = mask.copy()
     reversed_mask = np.where(reversed_mask == 1, 0, 1)
     return reversed_mask
 
 
+def grey_split(mask):
+    """
+    Turns a greyscale mask to a 2 colors mask
+    :param mask: the greyscale input mask
+    :return: a 2 colors masks
+    """
+    grey = np.zeros(shape=(mask.shape[0], mask.shape[1]), dtype=np.long)
+    grey[...] = mask[..., 0]
+    grey[grey != 0] = 1.0
+    return grey
+
+
+""" Batching """
+
+
 def fold_batch(inputs, masks, batch_size):
+    """
+    Merge several inputs and their corresponding ground truths masks to create batches
+    :param inputs: list of numpy matrices of shape 6x650x650
+    :param masks: list of numpy matrices of shape 650x650
+    :param batch_size: the desired batch_size
+    :return: new_inputs, new_masks : lists of batched inputs and masks
+    """
 
     new_inputs = []
     new_masks = []
@@ -406,9 +333,6 @@ def fold_batch(inputs, masks, batch_size):
         batch_inputs = np.stack(inputs[idx:idx+next_pick], axis=0)
         batch_masks = np.stack(masks[idx:idx+next_pick], axis=0)
 
-        #print("bis", batch_inputs.shape)
-        #print("bms", batch_masks.shape)
-
         new_inputs.append(batch_inputs)
         new_masks.append(batch_masks)
 
@@ -420,23 +344,14 @@ def fold_batch(inputs, masks, batch_size):
 
 
 def unfold_batch(batch_list):
-
+    """
+    Unfolds a list of batched masks into a list of individual masks
+    :param batch_list: a list of batched masks
+    :return: a list of individual masks
+    """
     ret = []
     for batch in batch_list:
-        #print(batch.shape)
         for i in range(batch.shape[0]):
             ret.append(batch[i, ...])
-
     return ret
 
-
-
-if __name__ == '__main__':
-    import time
-    t_start = time.time()
-
-    main()
-    print("\ndone\n")
-
-    t_end = time.time()
-    print("total time : " + str(int((t_end - t_start)*1000)/1000.0) + " sec")

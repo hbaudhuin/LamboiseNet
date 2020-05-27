@@ -4,7 +4,6 @@ from loss import compute_loss, get_metrics, print_metrics
 from image import save_masks
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 
 
 def evaluation(model, dataset, device, save_mask=True, plot_roc=True, print_metric=True):
@@ -49,14 +48,12 @@ def evaluation(model, dataset, device, save_mask=True, plot_roc=True, print_metr
             image = image.to(device)
             ground_truth = ground_truth.to(device)
 
-            T0_FP_EVAL = time.time()
             with torch.no_grad():
                 mask_predicted = model(image)
             last_masks[i] = mask_predicted
-            print("FP EVAL", time.time()-T0_FP_EVAL)
 
             progress_bar.set_postfix(**{'loss': loss})
-            bce_weight = torch.Tensor([1, 5]).to(device)
+            bce_weight = torch.Tensor([1, 8]).to(device)
             loss += compute_loss(mask_predicted, ground_truth, bce_weight=bce_weight)
 
             get_metrics(mask_predicted[0, 0], ground_truth[0], to_plot_metrics, thesholds)

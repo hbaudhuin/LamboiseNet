@@ -1,5 +1,3 @@
-from sklearn.metrics import precision_recall_fscore_support as prfs
-
 from torch import *
 from Models.basicUnet import BasicUnet
 from Models.modularUnet import modularUnet
@@ -16,6 +14,7 @@ import matplotlib.pyplot as plt
 import datetime
 from loss import compute_loss, print_metrics
 import torchsummary
+import argparse
 
 
 def train_model(model,
@@ -23,23 +22,26 @@ def train_model(model,
                 batch_size,
                 learning_rate,
                 device,
+                n_augmentation,
                 train_dataset,
                 test_dataset,
                 reload,
                 save_model):
+
     logging.info(f'''Starting training : 
                 Type : {model.name}
                 Epochs: {num_epochs}
                 Batch size: {batch_size}
+                Data Augmentation: {n_augmentation}
                 Learning rate: {learning_rate}
                 Device: {device.type}
+                Reloading model : {reload}
                 Saving model : {save_model}''')
 
+    # Variables initialization
+
     if reload:
-        #model.load_state_dict(torch.load('backup_weights/last_backup.pth'))
         model.load_state_dict(torch.load('Weights/last.pth'))
-        #model.load_state_dict(torch.load('Weights/kek.pth'))
-    criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     last_masks = [None] * len(train_dataset)
@@ -59,13 +61,10 @@ def train_model(model,
     auc.append(0.5)
     f1_score.append(0)
 
+    # Reloading previous runs
     if reload:
-        #try:
+        try:
             prev_loss = np.loadtxt('Loss/last.pth')
-            #blank = np.zeros(shape=(prev_loss.shape[0], 4))
-            #blank[:, 0] = prev_loss[:, 0]
-            #blank[:, 1] = prev_loss[:, 1]
-            #prev_loss = blank
             losses_train = list(prev_loss[:, 0])
             losses_test = list(prev_loss[:, 1])
             losses_test_19 = list(prev_loss[:, 2])
@@ -76,23 +75,24 @@ def train_model(model,
             metrics_idx = list(prev_metrics[:, 0])
             auc = list(prev_metrics[:, 1])
             f1_score = list(prev_metrics[:, 2])
-        #except:
-        #    print("Failed to load previous loss values")
+        except:
+            print("Failed to load previous loss values")
 
-    changed = 5
+    changed = 10
+
+    # EPOCH MAIN LOOP
     for epochs in range(0, num_epochs):
 
-        # new dataset with random augmentation at each epoch
-        T0_LOAD = time.time()
-        train_dataset = load_dataset(IMAGE_NUM[0:22], 2, batch_size=batch_size)
-        print("load_dataset time", time.time()-T0_LOAD)
+        # New dataset with random augmentation at each epoch
+        train_dataset = load_dataset(IMAGE_NUM[0:22], n_augmentation, batch_size=batch_size)
 
+        # Adaptive learning rate
         logging.info(f'Epoch {epochs}')
-        if len(losses_train) > 100 :
+        if len(losses_train) > 100:
             if np.linalg.norm(losses_train[-1:-4]) < 0.01 and changed < 1:
                 changed = 10
-                logging.info(f'Learning rate going to {learning_rate/2}')
                 learning_rate /= 2
+                logging.info(f'Learning rate going to {learning_rate}')
                 optimizer.lr = learning_rate
             else:
                 changed -= 1
@@ -103,79 +103,45 @@ def train_model(model,
         loss_test_19 = 0
         loss_test_91 = 0
 
-        #Every epoch has a training and validation phase
+        # Every epoch has a training and validation phase
 
         # TRAIN
         with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
             model.train()
             for i, (images, ground_truth) in enumerate(train_dataset):
 
+                # Get the correct data from the dataloader
                 images = images[0, ...]
                 ground_truth = ground_truth[0, ...]
 
+                # Upload the images to the device
                 images = images.to(device)
-                last_truths[i] = ground_truth
+                last_truths[i] = ground_truth # Keep track to save the masks as images
                 ground_truth = ground_truth.to(device)
 
-                T0_FP_TRAIN = time.time()
+                # Forward propagation
                 mask_predicted = model(images)
-                print("FP_TRAIN", time.time()-T0_FP_TRAIN)
+                last_masks[i] = mask_predicted # Keep track to save the masks as images
 
-                last_masks[i] = mask_predicted
-
+                # Compute loss
                 bce_weight = torch.Tensor([1, 8]).to(device)
                 loss = compute_loss(mask_predicted, ground_truth, bce_weight=bce_weight)
 
                 loss_train += loss.item() / len(train_dataset)
                 progress_bar.set_postfix(**{'loss': loss.item()})
 
-                # zero the gradient and back propagate
-                T0_BP_TRAIN = time.time()
+                # Zero the gradient and back propagation
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                print("BP_TRAIN", time.time() - T0_BP_TRAIN)
 
                 progress_bar.update(1)
 
         # TEST
-
-        '''
-        with tqdm(desc=f'Epoch {epochs}', unit='img') as progress_bar:
-
-            model.eval()
-            for i, (images, ground_truth) in enumerate(test_dataset):
-
-                images = images[0, ...]
-                ground_truth = ground_truth[0, ...]
-
-                images = images.to(device)
-                ground_truth = ground_truth.to(device)
-
-                with torch.no_grad():
-                    mask_predicted = model(images)
-
-                loss = compute_loss(mask_predicted,
-                                    ground_truth,
-                                    bce_weight=torch.Tensor([0.5, 0.5]).to(device))
-                loss19 = compute_loss(mask_predicted,
-                                      ground_truth,
-                                      bce_weight=torch.Tensor([0.1, 0.9]).to(device))
-                loss91 = compute_loss(mask_predicted,
-                                      ground_truth,
-                                      bce_weight=torch.Tensor([0.9, 0.1]).to(device))
-                loss_test += loss / len(test_dataset)
-                loss_test_19 += loss19 / len(test_dataset)
-                loss_test_91 += loss91 / len(test_dataset)
-                progress_bar.set_postfix(**{'loss': loss.item()})
-
-                progress_bar.update(1)
-        '''
-        T0_EVAL = time.time()
         test_metrics = evaluation(model, test_dataset, device, save_mask=False, plot_roc=False, print_metric=False)
-        print("evaluation time", time.time() - T0_EVAL)
         loss_test = test_metrics["loss"]
 
+        # Metrics bookkeeping
         #print_metrics(metrics, len(train_dataset), phase)
         logging.info(f'Train loss {loss_train}')
         logging.info(f'Test loss  {loss_test}')
@@ -188,17 +154,12 @@ def train_model(model,
         auc.append(test_metrics["AUC"])
         f1_score.append(np.max(test_metrics["F1"]))
 
+    # END OF EPOCH MAIN LOOP
+
+    # Save the predicted masks in an image
     save_masks(last_masks, last_truths, str(device), max_img=50, shuffle=False, threshold=test_metrics["best_threshold"])
 
-    #Test set evaluation
-    metrics = evaluation(model, test_dataset, device)
-    #print_metrics(metrics, len(test_dataset), 'test set')
-
-    #metrics_idx.append(prev_epochs + num_epochs - 1)
-    #auc.append(metrics["AUC"])
-    #f1_score.append(np.max(metrics["F1"]))
-
-    # save model weights
+    # Save model weights and metrics
     current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     if save_model:
         placeholder_file('Weights/last.pth')
@@ -208,7 +169,7 @@ def train_model(model,
         torch.save(model.state_dict(), 'Weights/' + current_datetime + "-" + str(prev_epochs+num_epochs) + '.pth')
         logging.info(f'Model saved')
 
-        # save the losses
+        # Save losses
         loss_to_save = np.stack([np.asarray(losses_train), np.asarray(losses_test), np.asarray(losses_test_19), np.asarray(losses_test_91)], axis=1)
         placeholder_file(
             'Loss/' + 'learning_' + str(learning_rate) + '_epoch_' + str(num_epochs) + '_time_' + current_datetime + '.pth')
@@ -218,12 +179,12 @@ def train_model(model,
         placeholder_file('Loss/last.pth')
         np.savetxt('Loss/last.pth', loss_to_save)
 
-        # save the metrics
+        # Save other metrics
         metrics_to_save = np.stack([np.asarray(metrics_idx), np.asarray(auc), np.asarray(f1_score)], axis=1)
         placeholder_file('Loss/last_metrics.pth')
         np.savetxt('Loss/last_metrics.pth', metrics_to_save)
 
-    # plot train and test losses
+    # Plot train and test losses and metrics
     plt.plot([i for i in range(0, len(losses_train))], losses_train, label='Train Loss = '+str(round(losses_train[len(losses_train)-1], 3)))
     plt.plot([i for i in range(0, len(losses_test))], losses_test, label='Test Loss = '+str(round(losses_test[len(losses_test)-1].item(), 3)))
     #plt.plot([i for i in range(0, len(losses_test_19))], losses_test_19, label='Test Loss 19 = '+str(round(losses_test_19[len(losses_test_19)-1].item(), 3)))
@@ -238,48 +199,70 @@ def train_model(model,
     plt.show()
     plt.close("Loss.png")
 
+    # FINI !
+
 
 
 if __name__ == '__main__':
     t_start = time.time()
 
     # Hyperparameters
+    # Change them here
     num_epochs = 1
-    num_classes = 2
+    learning_rate = 0.01
     batch_size = 1
-    learning_rate = 0.000000001
-    n_images = 1
+    n_augmentation = 2
+    num_classes = 2
     n_channels = 6
 
-    # setup of log and device
+    reload_model = False
+    save_model = False
+
+    # Arg parse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--epochs", help="number of epochs the model will run", type=int)
+    parser.add_argument("--learning_rate", help="starting learning rate", type=float)
+    parser.add_argument("--n_data_augm", help="number of data augmentation instances to generate per initial instance", type=int)
+    parser.add_argument("-reload", help="reload the weights and metrics from the last run", action="store_true")
+    parser.add_argument("-save", help="save the weights and metrics of the model when it has finished running", action="store_true")
+    args = parser.parse_args()
+    if args.epochs is not None:
+        num_epochs = args.epochs
+    if args.learning_rate is not None:
+        learning_rate = args.learning_rate
+    if args.n_data_augm is not None:
+        n_augmentation = args.n_data_augm
+    if args.reload:
+        reload_model = True
+    if args.save:
+        save_model = True
+
+    # Setup of log and device
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
     logging.info(f'Using {device}')
 
-    # dataset setup
+    # Dataset setup !!! It is hardcoded in other part of the code !!!
+    # If you want to change this, you have to modify load_dataset and
+    # every location where load_dataset is called !!!
     logging.info(f'Generating dataset ...')
     logging.info(f'Batch size: {batch_size}')
 
-    # transform into pytorch vector and normalise
-    # batch_index= batch(batch_size, n_images)
-    train_dataset = load_dataset(IMAGE_NUM[0:22], 2, batch_size)
+    train_dataset = load_dataset(IMAGE_NUM[0:22], n_augmentation, batch_size)
     test_dataset = load_dataset(IMAGE_NUM[22:32], 0)
-    # train_dataset = load_dataset(IMAGE_NUM)
-    # test_dataset = load_dataset(IMAGE_NUM)
 
     logging.info(f'Dataset generated')
 
-    # model creation
+    # Network creation, uncomment the one you want to use
 
-    model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
+    #model = BasicUnet(n_channels= n_channels, n_classes=num_classes)
     #model = modularUnet(n_channels=n_channels, n_classes=num_classes, depth=2)
     #model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
-    #model = lightUnetPlusPlus(n_channels=n_channels, n_classes=num_classes)
+    model = lightUnetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model.to(device)
     logging.info(f'Network creation:\n')
 
-    # Print the summary of the model
-    torchsummary.summary(model, input_size=(6, 600, 600))
+
 
 try:
     train_model(model=model,
@@ -287,10 +270,11 @@ try:
                 batch_size=batch_size,
                 learning_rate=learning_rate,
                 device=device,
+                n_augmentation=n_augmentation,
                 train_dataset=train_dataset,
                 test_dataset=test_dataset,
-                reload=True,
-                save_model=True)
+                reload=reload_model,
+                save_model=save_model)
 
 
 except KeyboardInterrupt:
