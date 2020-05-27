@@ -7,13 +7,11 @@ import torch.utils.data
 from image import *
 import logging
 from tqdm import tqdm
-import torch.nn as nn
 from eval import evaluation
 import time
 import matplotlib.pyplot as plt
 import datetime
 from loss import compute_loss, print_metrics
-import torchsummary
 import argparse
 
 

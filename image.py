@@ -1,5 +1,4 @@
 import numpy as np
-import tifffile as tif
 from PIL import Image
 import imageio
 import torch
@@ -147,6 +146,7 @@ def open_image(filename):
     """
     # Loading a tif file
     if filename[-4:].lower() in [".tif", "tiff"]:
+        import tifffile as tif
         return tif.imread(filename)
     # Loading a png file
     else:
