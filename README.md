@@ -4,15 +4,15 @@
 
 Héloïse BAUDHUIN - Antoine LAMBOT
 
-###Requirements :
+### Requirements :
 
-#####Dataset:
+##### Dataset:
 You need all the **Earth_*** (1-32) instances from the dataset.
 They need to be in the DATA folder.
 
 Link to the dataset : https://drive.google.com/drive/folders/1rd1vseWiFSqQc5-93XSRQW9Bzzcgqc6H?usp=sharing 
 
-#####Weights and metrics:
+##### Weights and metrics:
 If you want to run our already trained **Light UNet++** with the -reload argument, you need the following files :
 - Weights/last.pth
 - Loss/last.pth
@@ -23,7 +23,7 @@ Links to the files :
 https://drive.google.com/drive/folders/1qbZm-b4gdhzzMCP09XwWx2wJKxsSXBJL?usp=sharing
 https://drive.google.com/drive/folders/1-DdCZxCv7OInvpUnbbT-4p2Uhc_v6ztI?usp=sharing
 
-#####Librairies:
+##### Librairies:
 - PyTorch (1.3.1+)
 - numpy
 - scikit-learn
@@ -33,7 +33,7 @@ https://drive.google.com/drive/folders/1-DdCZxCv7OInvpUnbbT-4p2Uhc_v6ztI?usp=sha
 - imgaug
 - tqdm
 
-###Usage :
+### Usage :
 ```
 python3 train.py 
                 [-h]
