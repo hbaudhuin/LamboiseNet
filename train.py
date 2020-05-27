@@ -207,7 +207,7 @@ if __name__ == '__main__':
     # Hyperparameters
     # Change them here
     num_epochs = 1
-    learning_rate = 0.01
+    learning_rate = 0.001
     batch_size = 1
     n_augmentation = 2
     num_classes = 2
@@ -218,11 +218,11 @@ if __name__ == '__main__':
 
     # Arg parse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", help="number of epochs the model will run", type=int)
-    parser.add_argument("--learning_rate", help="starting learning rate", type=float)
-    parser.add_argument("--n_data_augm", help="number of data augmentation instances to generate per initial instance", type=int)
-    parser.add_argument("-reload", help="reload the weights and metrics from the last run", action="store_true")
-    parser.add_argument("-save", help="save the weights and metrics of the model when it has finished running", action="store_true")
+    parser.add_argument("--epochs", help="number of epochs the model will run (1 by default)", type=int)
+    parser.add_argument("--learning_rate", help="starting learning rate (0.001 by default)", type=float)
+    parser.add_argument("--n_data_augm", help="number of data augmentation instances to generate per original instance (2 by default)", type=int)
+    parser.add_argument("-reload", help="reload the model weights and metrics from the last run (disabled by default)", action="store_true")
+    parser.add_argument("-save", help="save the weights and metrics of the model when it has finished running (disabled by default)", action="store_true")
     args = parser.parse_args()
     if args.epochs is not None:
         num_epochs = args.epochs
