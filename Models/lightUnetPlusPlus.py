@@ -25,29 +25,23 @@ class lightUnetPlusPlus(nn.Module):
         filter_sizes = [basis_filter, basis_filter * 2, basis_filter * 4, basis_filter* 8, basis_filter * 16]
 
         self.layer0_0 = DoubleConvolutionLayer(n_channels, filter_sizes[0])
-
         self.layer1_0 = Downscaling_layer(filter_sizes[0], filter_sizes[1])
         self.layer2_0 = Downscaling_layer(filter_sizes[1], filter_sizes[2])
         self.layer3_0 = Downscaling_layer(filter_sizes[2], filter_sizes[3])
-
         self.layer3_1 = DoubleConvolutionLayer(filter_sizes[3], filter_sizes[3])
-
         self.layer0_2 = DoubleConvolutionLayer(filter_sizes[0] + filter_sizes[1], filter_sizes[0])
         self.layer1_2 = DoubleConvolutionLayer(filter_sizes[1] + filter_sizes[2], filter_sizes[1])
         self.layer2_2 = DoubleConvolutionLayer(filter_sizes[2] + filter_sizes[3], filter_sizes[2])
-
         self.layer0_3 = DoubleConvolutionLayer(filter_sizes[0] * 2 + filter_sizes[1], filter_sizes[0])
         self.layer1_3 = DoubleConvolutionLayer(filter_sizes[1] * 2 + filter_sizes[2], filter_sizes[1])
-
         self.layer0_4 = DoubleConvolutionLayer(filter_sizes[0] * 3 + filter_sizes[1], filter_sizes[0])
-
         self.final = FinalLayer(filter_sizes[0], n_classes,n_classes)
 
     def forward(self, input):
         """
         Describe the flow of the input given to the UnetPlusPlus.
         :param input: input matrix given to the unetPlusPlus
-        :return: the input after passing throught the Net.
+        :return: the input after passing through the Net.
         """
         x0_0 = self.layer0_0(input)
 
