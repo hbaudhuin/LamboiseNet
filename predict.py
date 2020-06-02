@@ -76,7 +76,7 @@ if __name__ == '__main__':
     # model = unetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model = lightUnetPlusPlus(n_channels=n_channels, n_classes=num_classes)
     model.to(device)
-    model.load_state_dict(torch.load('Weights/last.pth'))
+    model.load_state_dict(torch.load('Weights/last.pth',map_location=torch.device(device)))
     model.eval()
     logging.info(f'Model loaded\n')
 
