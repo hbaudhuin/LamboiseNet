@@ -62,6 +62,47 @@ def load_dataset(img_nums, n_augmentation_per_image, batch_size=1):
     return dataset_to_dataloader(inputs, masks)
 
 
+def load_dataset_predict(input_dir, output_dir, instance_names, batch_size=1):
+    """
+    Loads images from the Earth dataset, applies the necessary preprocessing and put them into a dataloader format
+    This version is to be used by predict
+    :param input_dir: path to the directory where the instances are located
+    :param output_dir: path to the directory where to save the output masks
+    :param instance_names: list of directory names
+    :param batch_size: number of instances per batch
+    :return: a dataloader object containing the dataset
+    """
+
+    inputs = np.zeros(shape=(len(instance_names), 6, 650, 650))
+    masks = np.zeros(shape=(len(instance_names), 650, 650), dtype=np.long)
+    output_paths = []
+
+    i = 0
+    for inst in instance_names:
+        try:
+            # Opening
+            img_b = open_image(input_dir + "/" + inst + "/before.png")
+            img_a = open_image(input_dir + "/" + inst + "/after.png")
+            img_m = np.zeros(shape=(650, 650))
+
+            # Prepare
+            input, mask = images_prepare(img_b, img_a, img_m)
+
+            inputs[i] = input
+            masks[i] = mask
+            output_paths.append(output_dir + "/" + inst)
+            i += 1
+        except Exception as e:
+            #print("WARNING : error while opening instance " + input_dir + inst)
+            print(e)
+    inputs = inputs[:i]
+    masks = masks[:i]
+
+    # Batching
+    inputs, masks = fold_batch(inputs, masks, batch_size)
+    return dataset_to_dataloader(inputs, masks), output_paths
+
+
 def data_augmentation(before, after, mask, n_augmentation):
     """
     Applies data augmentation on instances
@@ -136,6 +177,16 @@ def placeholder_file(path):
     import os
     if not os.path.exists(path):
         with open(path, 'w'): pass
+
+
+def placeholder_path(path):
+    """
+    Creates the directories of a path if it doesn't already exists
+    :param path: path of the directories to create
+    """
+    import os
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 def open_image(filename):
@@ -231,6 +282,57 @@ def save_masks(masks_predicted, ground_truths, device, max_img=10, shuffle=False
 
     img = Image.fromarray(out)
     img = img.convert("RGB")
+    img.save(filename)
+
+
+def save_predicted_mask(mask, device, color="red", filename="mask_predicted.png", threshold=None):
+    """
+    Saves multiple ground truths and their prediction on a big single image
+    :param mask: predicted mask to save (batched)
+    :param device: device used to predict the mask (cpu or cuda)
+    :param color: background color for the predicted masks (blue or red, black otherwise)
+    :param filename: in which file we will save the image
+    :param threshold: used to find the class of each pixel, should be between 0 and 1
+    """
+
+    mask = unfold_batch(mask)
+
+    out = np.ones((650, 650, 3), 'uint8')
+
+    mp = mask[0]
+
+    arrs = np.zeros(shape=(2, 650, 650))
+    if str(device) == 'cuda':
+        arrs[...] = mp.cpu().detach().numpy()[...]
+    else:
+        arrs[...] = mp.detach().numpy()[0, ...]
+
+    arrs = arrs[0, :, :]
+    arrs = 1 - arrs
+    arrs[arrs < 0] = 0
+
+    # Threshold
+    if threshold is not None:
+        arrs[arrs < threshold] = 0
+        arrs[arrs >= threshold] = 1
+
+    arrs *= 255
+
+    # PREDICTED
+
+    rgbArray = np.ones((650, 650, 3), 'uint8')
+    rgbArray *= 255
+    if color != "red":
+        rgbArray[..., 0] = arrs
+    rgbArray[..., 1] = arrs
+    if color != "blue":
+        rgbArray[..., 2] = arrs
+
+    out[0:650, 0:650, 0:3] = rgbArray
+
+    img = Image.fromarray(out)
+    img = img.convert("RGB")
+    placeholder_file(filename)
     img.save(filename)
 
 

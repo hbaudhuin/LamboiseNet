@@ -156,6 +156,7 @@ def train_model(model,
 
     # Save the predicted masks in an image
     save_masks(last_masks, last_truths, str(device), max_img=50, shuffle=False, threshold=test_metrics["best_threshold"])
+    logging.info(f'Best threshold  {test_metrics["best_threshold"]}')
 
     # Save model weights and metrics
     current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -261,23 +262,21 @@ if __name__ == '__main__':
     logging.info(f'Network creation:\n')
 
 
+    try:
+        train_model(model=model,
+                    num_epochs=num_epochs,
+                    batch_size=batch_size,
+                    learning_rate=learning_rate,
+                    device=device,
+                    n_augmentation=n_augmentation,
+                    train_dataset=train_dataset,
+                    test_dataset=test_dataset,
+                    reload=reload_model,
+                    save_model=save_model)
 
-try:
-    train_model(model=model,
-                num_epochs=num_epochs,
-                batch_size=batch_size,
-                learning_rate=learning_rate,
-                device=device,
-                n_augmentation=n_augmentation,
-                train_dataset=train_dataset,
-                test_dataset=test_dataset,
-                reload=reload_model,
-                save_model=save_model)
-
-
-except KeyboardInterrupt:
-    torch.save(model.state_dict(), 'Weights/last.pth')
-    logging.info(f'Interrupted by Keyboard')
-finally:
-    t_end = time.time()
-    print("\nDone in " + str(int((t_end - t_start))) + " sec")
+    except KeyboardInterrupt:
+        torch.save(model.state_dict(), 'Weights/last.pth')
+        logging.info(f'Interrupted by Keyboard')
+    finally:
+        t_end = time.time()
+        print("\nDone in " + str(int((t_end - t_start))) + " sec")
