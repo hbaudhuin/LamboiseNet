@@ -22,8 +22,6 @@ The aim of this thesis is to create a CNN capable of detecting new constructions
  The CNN architecture we are using is the UNet++ with layers removed and the filter size reduced. This way the model fits on a GPU with 6G of memory. As you can see on the above pictures, our model manages to find the changes and produce a segmentation mask with their approximated shape.
 
 
-
-
 ## Requirements :
 
 ### Dataset:
@@ -95,7 +93,25 @@ optional arguments:
                         background color of the generated masks, can be 'red',
                         'blue' or 'black'
 ```
-Given an input instance of two images, *predict* will generate a change mask and store it in a png file. A single instance is a directory containing two files *before.png* and *after.png*, satellite images of the same place at different times, each 650 by 650 pixels, at a resolution of around 50cm/pixel. To run *predict* on one or multiple instances, use the folder containing the instance as input parameter. See the demo for more details.
+
+#### Input format
+
+```
+DATA_TO_BE_PREDICTED 
+│
+└───instance_0
+|   ├── before.png
+|   └── after.png
+└───instance_1
+|   ├── before.png
+|   └── after.png
+└───my_instance
+|   ├── before.png
+|   └── after.png
+...
+```
+
+Given an input instance of two images, *predict* will generate a change mask and store it in a png file. A single instance is a directory containing two files *before.png* and *after.png*, aligned satellite images of the same place at different times, each 650 by 650 pixels, at a resolution of around 50cm/pixel. To run *predict* on one or multiple instances, use the folder containing the instance as input parameter. See the demo for more details.
 
 #### Demonstration
 
@@ -106,6 +122,8 @@ How to use our model to predict masks :
 ```
 python3 predict -i DEMO -o DEMO -c red -t 0.1
 python3 predict -i DEMO -o DEMO2
+
+python3 predict -i DEMO/instance_1 -o DEMO/instance_1  !! This will NOT work !!
 ```
 
 ### Train
