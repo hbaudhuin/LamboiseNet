@@ -4,9 +4,23 @@
 
 Héloïse BAUDHUIN - Antoine LAMBOT
 
-###Description:
-The aim of this thesis is to create a CNN capable of detecting new constructions in satellite imagery. More precisly, taking two satellite images taken at different times and output a 
-segmentation mask with the contour of the new buildings. 
+### Description:
+
+The aim of this thesis is to create a CNN capable of detecting new constructions in satellite imagery. More precisly, taking two satellite images taken at different times and output a segmentation mask with the contour of the new buildings. The model takes two RGB images of 650 x 650 as input and outputs a semgmentation mask of the same size.
+
+![alt ](https://github.com/hbaudhuin/LamboiseNet/blob/master/Example/before.png?raw=true)
+*First input: before image*
+
+![alt ](https://github.com/hbaudhuin/LamboiseNet/blob/master/Example/after.png?raw=true)
+*Second input: After image*
+
+![alt ](https://github.com/hbaudhuin/LamboiseNet/blob/master/Example/gt.png?raw=true)
+*Segmentation mask with the changes*
+
+![alt ](https://github.com/hbaudhuin/LamboiseNet/blob/master/Example/output.png?raw=true)
+*Mask output by the CNN*
+ The CNN architecture we are using is the UNet++ with layers removed and the filter size reduced. This way the model fits on a GPU with 6G of memory. As you can see on the above pictures, our model manages to find the changes and produce a segmentation mask with their approximated shape.
+
 
 
 
@@ -40,6 +54,9 @@ https://drive.google.com/drive/folders/1-DdCZxCv7OInvpUnbbT-4p2Uhc_v6ztI?usp=sha
 - tqdm
 
 ### Usage :
+## Predict
+
+## Train
 ```
 python3 train.py 
                 [-h]
