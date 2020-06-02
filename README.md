@@ -65,6 +65,8 @@ https://drive.google.com/drive/folders/1-DdCZxCv7OInvpUnbbT-4p2Uhc_v6ztI?usp=sha
 - tqdm
 
 ### Usage :
+It is strongly recommended to use this code on a computer equipped with a GPU. 
+The execution time on a CPU is manageable for a prediction but not for the training.
 ## Predict
 ```
 python3 predict.py
