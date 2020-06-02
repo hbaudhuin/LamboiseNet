@@ -4,7 +4,7 @@
 
 Héloïse BAUDHUIN - Antoine LAMBOT
 
-### Description:
+## Description:
 
 The aim of this thesis is to create a CNN capable of detecting new constructions in satellite imagery. More precisly, taking two satellite images taken at different times and output a segmentation mask with the contour of the new buildings. The model takes two RGB images of 650 x 650 as input and outputs a semgmentation mask of the same size.
 
@@ -24,9 +24,10 @@ The aim of this thesis is to create a CNN capable of detecting new constructions
 
 
 
-### Requirements :
+## Requirements :
 
-##### Dataset:
+### Dataset:
+
 #### Training:
 You need all the **Earth_*** (1-32) instances from the dataset.
 They need to be in the DATA folder.
@@ -36,7 +37,8 @@ Link to the dataset : https://drive.google.com/drive/folders/1rd1vseWiFSqQc5-93X
 #### Predicting:
 We provide two instances in the **DEMO** folder. You may add your own instances. You will need two images of 650x650 pixels, perfectly aligned, placed in a subfolder of the **DEMO** folder.
 
-##### Weights and metrics:
+### Weights and metrics:
+
 #### Training:
 If you want to train our already trained **Light UNet++** with the -reload argument, you need the following files :
 - Weights/last.pth
@@ -47,14 +49,12 @@ If you want to train our already trained **Light UNet++** with the -reload argum
 If you want to predict masks with our already trained **Light UNet++**, you will need the following files :
 - Weights/last.pth
 
-
-
 Links to the files :
 
 https://drive.google.com/drive/folders/1qbZm-b4gdhzzMCP09XwWx2wJKxsSXBJL?usp=sharing
 https://drive.google.com/drive/folders/1-DdCZxCv7OInvpUnbbT-4p2Uhc_v6ztI?usp=sharing
 
-##### Librairies:
+### Librairies:
 - PyTorch (1.3.1+)
 - numpy
 - scikit-learn
@@ -64,23 +64,51 @@ https://drive.google.com/drive/folders/1-DdCZxCv7OInvpUnbbT-4p2Uhc_v6ztI?usp=sha
 - imgaug
 - tqdm
 
-### Usage :
+## Usage :
 It is strongly recommended to use this code on a computer equipped with a GPU. 
 The execution time on a CPU is manageable for a prediction but not for the training.
-## Predict
+Predicting takes ~2 sec per instance on a GPU, ~20 sec on a CPU.
+
+### Predict
 ```
 python3 predict.py
-                  [--input] path to the input directory, containing instance directories, each instance directory should                                                                         contain before.png and after.png 650x650 images
-                  [--output] path to the output directory, where the change masks will be saved, can be the same as the input directory
-                  [--threshold] a value between 0 and 1, to classify each pixel, if not given the mask pixels will have continuous values between the two classes
-                  [--color] background color of the generated masks, can be 'red', 'blue' or 'black'
+                [-h]
+                [--input INPUT]
+                [--output OUTPUT]
+                [--threshold THRESHOLD]
+                [--color COLOR]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --input INPUT, -i INPUT
+                        path to the input directory, containing instance
+                        directories, each instance directory should contain
+                        before.png and after.png 650x650 images
+  --output OUTPUT, -o OUTPUT
+                        path to the output directory, where the change masks
+                        will be saved, can be the same as the input directory
+  --threshold THRESHOLD, -t THRESHOLD
+                        a value between 0 and 1, to classify each pixel, if
+                        not given the mask pixels will have continuous values
+                        between the two classes
+  --color COLOR, -c COLOR
+                        background color of the generated masks, can be 'red',
+                        'blue' or 'black'
 ```
+Given an input instance of two images, *predict* will generate a change mask and store it in a png file. A single instance is a directory containing two files *before.png* and *after.png*, satellite images of the same place at different times, each 650 by 650 pixels, at a resolution of around 50cm/pixel. To run *predict* on one or multiple instances, use the folder containing the instance as input parameter. See the demo for more details.
+
+#### Demonstration
+
 How to use our model to predict masks :
 1. Download the project
 2. Follow the requirements for the prediction
-3. run predict.py with the correct arguments. The input directory is the **DEMO** folder if you haven't added images of your own. Play around with the thresholds and see the influence on the output masks.
+3. run predict.py with the correct arguments. The input directory is the **DEMO** folder if you haven't added images of your own. Play around with the thresholds and see the influence on the output masks. You can try the following :
+```
+python3 predict -i DEMO -o DEMO -c red -t 0.1
+python3 predict -i DEMO -o DEMO2
+```
 
-## Train
+### Train
 ```
 python3 train.py 
                 [-h]
@@ -104,9 +132,11 @@ optional arguments:
                         finished running (disabled by default)
 ```
 
-#### Licence : 
-MIT
-Copyright <2020> <Héloïse Baudhuin and Antoine Lambot>
+## License : 
+
+The MIT License (MIT)
+
+Copyright (c) 2020 <Héloïse Baudhuin and Antoine Lambot>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
