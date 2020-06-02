@@ -4,6 +4,26 @@
 
 Héloïse BAUDHUIN - Antoine LAMBOT
 
+### Description:
+
+The aim of this thesis is to create a CNN capable of detecting new constructions in satellite imagery. More precisly, taking two satellite images taken at different times and output a segmentation mask with the contour of the new buildings. The model takes two RGB images of 650 x 650 as input and outputs a semgmentation mask of the same size.
+
+![alt ](https://github.com/hbaudhuin/LamboiseNet/blob/master/Example/before.png?raw=true)
+*First input: before image*
+
+![alt ](https://github.com/hbaudhuin/LamboiseNet/blob/master/Example/after.png?raw=true)
+*Second input: After image*
+
+![alt ](https://github.com/hbaudhuin/LamboiseNet/blob/master/Example/gt.png?raw=true)
+*Segmentation mask with the changes*
+
+![alt ](https://github.com/hbaudhuin/LamboiseNet/blob/master/Example/output.png?raw=true)
+*Mask output by the CNN*
+ The CNN architecture we are using is the UNet++ with layers removed and the filter size reduced. This way the model fits on a GPU with 6G of memory. As you can see on the above pictures, our model manages to find the changes and produce a segmentation mask with their approximated shape.
+
+
+
+
 ### Requirements :
 
 ##### Dataset:
@@ -34,6 +54,9 @@ https://drive.google.com/drive/folders/1-DdCZxCv7OInvpUnbbT-4p2Uhc_v6ztI?usp=sha
 - tqdm
 
 ### Usage :
+## Predict
+
+## Train
 ```
 python3 train.py 
                 [-h]
@@ -57,3 +80,12 @@ optional arguments:
                         finished running (disabled by default)
 ```
 
+#### Licence : 
+MIT
+Copyright <2020> <Héloïse Baudhuin and Antoine Lambot>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
