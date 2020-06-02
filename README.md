@@ -27,16 +27,27 @@ The aim of this thesis is to create a CNN capable of detecting new constructions
 ### Requirements :
 
 ##### Dataset:
+#### Training:
 You need all the **Earth_*** (1-32) instances from the dataset.
 They need to be in the DATA folder.
 
 Link to the dataset : https://drive.google.com/drive/folders/1rd1vseWiFSqQc5-93XSRQW9Bzzcgqc6H?usp=sharing 
 
+#### Predicting:
+We provide two instances in the **DEMO** folder. You may add your own instances. You will need two images of 650x650 pixels, perfectly aligned, placed in a subfolder of the **DEMO** folder.
+
 ##### Weights and metrics:
-If you want to run our already trained **Light UNet++** with the -reload argument, you need the following files :
+#### Training:
+If you want to train our already trained **Light UNet++** with the -reload argument, you need the following files :
 - Weights/last.pth
 - Loss/last.pth
 - Loss/last_metrics.pth
+
+#### Predicting:
+If you want to predict masks with our already trained **Light UNet++**, you will need the following files :
+- Weights/last.pth
+
+
 
 Links to the files :
 
@@ -55,6 +66,17 @@ https://drive.google.com/drive/folders/1-DdCZxCv7OInvpUnbbT-4p2Uhc_v6ztI?usp=sha
 
 ### Usage :
 ## Predict
+```
+python3 predict.py
+                  [--input] path to the input directory, containing instance directories, each instance directory should                                                                         contain before.png and after.png 650x650 images
+                  [--output] path to the output directory, where the change masks will be saved, can be the same as the input directory
+                  [--threshold] a value between 0 and 1, to classify each pixel, if not given the mask pixels will have continuous values between the two classes
+                  [--color] background color of the generated masks, can be 'red', 'blue' or 'black'
+```
+How to use our model to predict masks :
+1. Download the project
+2. Follow the requirements for the prediction
+3. run predict.py with the correct arguments. The input directory is the **DEMO** folder if you haven't added images of your own. Play around with the thresholds and see the influence on the output masks.
 
 ## Train
 ```
