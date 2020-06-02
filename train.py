@@ -39,7 +39,7 @@ def train_model(model,
     # Variables initialization
 
     if reload:
-        model.load_state_dict(torch.load('Weights/last.pth'))
+        model.load_state_dict(torch.load('Weights/last.pth',map_location=torch.device(device)))
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     last_masks = [None] * len(train_dataset)
