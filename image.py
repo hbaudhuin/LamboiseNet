@@ -305,7 +305,7 @@ def save_predicted_mask(mask, device, color="red", filename="mask_predicted.png"
     if str(device) == 'cuda':
         arrs[...] = mp.cpu().detach().numpy()[...]
     else:
-        arrs[...] = mp.detach().numpy()[0, ...]
+        arrs[...] = mp.detach().numpy()[...]
 
     arrs = arrs[0, :, :]
     arrs = 1 - arrs
